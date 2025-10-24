@@ -1,5 +1,5 @@
 {
-  "name": "@kohasummons/paystack-mcp",
+  "name": "@moniewave/paystack-mcp",
   "version": "0.1.0",
   "description": "The Paystack MCP server for your AI agents",
   "main": "build/index.js",

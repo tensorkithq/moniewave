@@ -1,27 +1,85 @@
-# ChatGPT React Widgets with xmcp
+# Moniewave
 
-This project demonstrates how to create ChatGPT widgets using xmcp and React.
+A **Turborepo monorepo** containing multiple MCP (Model Context Protocol) server implementations and xmcp-based ChatGPT widgets for Paystack payment integration.
+
+## Monorepo Structure
+
+```
+moniewave/
+├── apps/
+│   └── server/              # Go MCP server for Paystack API
+├── packages/
+│   ├── paystack-mcp/        # TypeScript MCP server (@moniewave/paystack-mcp)
+│   └── xmcp/                # xmcp widgets with React (@moniewave/xmcp)
+└── examples/                # Apps SDK examples gallery (standalone)
+```
 
 ## Getting Started
 
+### Prerequisites
+
+- Node.js 18+
+- pnpm 10.13.1+
+- Go 1.23.0+ (for Go server)
+
+### Installation
+
 ```bash
-npm run dev
+pnpm install
 ```
 
-This will start the development server with HTTP transport enabled.
+### Development
+
+Run all packages in development mode:
+
+```bash
+pnpm dev
+```
+
+Build all packages:
+
+```bash
+pnpm build
+```
+
+### Working with Packages
+
+#### xmcp Package
+
+```bash
+cd packages/xmcp
+pnpm dev                 # Start dev server
+pnpm build               # Build production
+```
+
+#### Paystack MCP Server (TypeScript)
+
+```bash
+cd packages/paystack-mcp
+pnpm build               # Compile TypeScript
+pnpm dev:debug           # Run with MCP Inspector
+```
+
+#### Go MCP Server
+
+```bash
+cd apps/server
+go run main.go           # Run server
+go build                 # Build binary
+```
 
 ## Features
 
-- **React Components**: Build interactive widgets using React
-- **Server-Side Rendering**: Enabled with `experimental.ssr` for optimal performance
-- **TypeScript**: Full TypeScript support for type safety
+- **Turborepo**: Fast, efficient monorepo build system
+- **pnpm Workspaces**: Optimized package management
+- **MCP Servers**: Both TypeScript and Go implementations for Paystack API
+- **xmcp Widgets**: React-based ChatGPT widgets
+- **Type Safety**: Full TypeScript support across packages
 
-## Example Tools
+## Documentation
 
-- **Counter**: A simple counter widget demonstrating state management
-- **Weather**: An interactive weather app that fetches real-time data
+See [CLAUDE.md](CLAUDE.md) for detailed architecture and development guide.
 
-## Learn More
+## License
 
-- [xmcp Documentation](https://xmcp.dev)
-- [ChatGPT Widgets Guide](https://xmcp.dev/docs/integrations/chatgpt)
+ISC

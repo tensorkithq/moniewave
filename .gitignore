@@ -7,3 +7,6 @@ xmcp-env.d.ts
 .env
 .claude
 build
+
+# Turborepo
+.turbo
