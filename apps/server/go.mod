@@ -1,6 +1,6 @@
 module paystack.mpc.proxy
 
-go 1.23.0
+go 1.25.3
 
 require (
 	github.com/borderlesshq/paystack-go v0.0.3
@@ -8,6 +8,7 @@ require (
 )
 
 require (
+	github.com/alpkeskin/gotoon v0.1.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
