@@ -1,7 +1,7 @@
 .PHONY: build run clean test dev install
 
 # Binary name
-BINARY_NAME=moniewave
+BINARY_NAME=moniewave-mcp-server
 BUILD_DIR=bin
 
 # Include .env file if it exists
