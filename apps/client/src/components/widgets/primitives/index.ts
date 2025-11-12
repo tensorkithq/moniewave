@@ -31,22 +31,22 @@ import { KeyValueList } from './KeyValueList';
 import { ButtonGroup } from './ButtonGroup';
 
 // Register all primitives
-registerWidget('Frame', Frame as any);
-registerWidget('FrameHeader', FrameHeader as any);
-registerWidget('Row', Row as any);
-registerWidget('Col', Col as any);
-registerWidget('Spacer', Spacer as any);
-registerWidget('Divider', Divider as any);
-registerWidget('Text', Text as any);
-registerWidget('Icon', Icon as any);
-registerWidget('Avatar', Avatar as any);
-registerWidget('Amount', Amount as any);
-registerWidget('Time', Time as any);
-registerWidget('Badge', Badge as any);
-registerWidget('Button', Button as any);
-registerWidget('KeyValueRow', KeyValueRow as any);
-registerWidget('KeyValueList', KeyValueList as any);
-registerWidget('ButtonGroup', ButtonGroup as any);
+registerWidget('Frame', Frame);
+registerWidget('FrameHeader', FrameHeader);
+registerWidget('Row', Row);
+registerWidget('Col', Col);
+registerWidget('Spacer', Spacer);
+registerWidget('Divider', Divider);
+registerWidget('Text', Text);
+registerWidget('Icon', Icon);
+registerWidget('Avatar', Avatar);
+registerWidget('Amount', Amount);
+registerWidget('Time', Time);
+registerWidget('Badge', Badge);
+registerWidget('Button', Button);
+registerWidget('KeyValueRow', KeyValueRow);
+registerWidget('KeyValueList', KeyValueList);
+registerWidget('ButtonGroup', ButtonGroup);
 
 // Export all primitives
 export {

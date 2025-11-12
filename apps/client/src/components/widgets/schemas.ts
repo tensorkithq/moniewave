@@ -217,7 +217,7 @@ export function validateWidget(spec: unknown): any {
  * Safely validates a widget specification
  * @returns { success: true, data: WidgetNode } or { success: false, error: z.ZodError }
  */
-export function safeValidateWidget(spec: unknown) {
+export function safeValidateWidget(spec: unknown): z.SafeParseReturnType<any, any> {
   return WidgetNodeSchema.safeParse(spec);
 }
 
