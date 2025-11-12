@@ -1,9 +1,5 @@
 .PHONY: build run clean test dev install fmt lint tidy help
-.PHONY: test-coverage test-race test-bench vet check
-.PHONY: build-all build-linux build-darwin build-windows
-.PHONY: setup env-check deps-install deps-update deps-verify
-.PHONY: docker-build docker-run docker-stop docker-clean
-.PHONY: release install-tools
+.PHONY: vet check setup env-check deps-update install-tools
 
 # Binary name
 BINARY_NAME=moniewave
@@ -38,9 +34,6 @@ help:
 	@echo ""
 	@echo "  Testing:"
 	@echo "    make test         - Run all tests"
-	@echo "    make test-coverage - Run tests with coverage report"
-	@echo "    make test-race    - Run tests with race detection"
-	@echo "    make test-bench   - Run benchmarks"
 	@echo ""
 	@echo "  Code Quality:"
 	@echo "    make fmt          - Format code with go fmt"
@@ -49,28 +42,15 @@ help:
 	@echo "    make check        - Run all checks (fmt, vet, lint, test)"
 	@echo ""
 	@echo "  Dependencies:"
-	@echo "    make install      - Download and verify dependencies"
+	@echo "    make install      - Download dependencies"
 	@echo "    make tidy         - Tidy and verify go.mod"
 	@echo "    make deps-update  - Update all dependencies"
-	@echo "    make deps-verify  - Verify dependencies"
-	@echo ""
-	@echo "  Build Variants:"
-	@echo "    make build-all    - Build for all platforms"
-	@echo "    make build-linux  - Build for Linux"
-	@echo "    make build-darwin - Build for macOS"
-	@echo "    make build-windows - Build for Windows"
 	@echo ""
 	@echo "  Setup & Utilities:"
-	@echo "    make setup        - Initial project setup"
+	@echo "    make setup        - Initial project setup (creates .env, installs deps)"
 	@echo "    make env-check    - Verify environment variables"
 	@echo "    make clean        - Remove build artifacts"
 	@echo "    make install-tools - Install development tools"
-	@echo ""
-	@echo "  Docker:"
-	@echo "    make docker-build - Build Docker image"
-	@echo "    make docker-run   - Run Docker container"
-	@echo "    make docker-stop  - Stop Docker container"
-	@echo "    make docker-clean - Remove Docker image and containers"
 	@echo ""
 
 ## build: Build the application
@@ -115,28 +95,10 @@ test:
 	@echo "Running tests..."
 	@go test -v ./...
 
-## test-coverage: Run tests with coverage
-test-coverage:
-	@echo "Running tests with coverage..."
-	@go test -v -coverprofile=coverage.out ./...
-	@go tool cover -html=coverage.out -o coverage.html
-	@echo "Coverage report saved to coverage.html"
-
-## test-race: Run tests with race detection
-test-race:
-	@echo "Running tests with race detection..."
-	@go test -v -race ./...
-
-## test-bench: Run benchmarks
-test-bench:
-	@echo "Running benchmarks..."
-	@go test -bench=. -benchmem ./...
-
 ## install: Install dependencies
 install:
 	@echo "Installing dependencies..."
 	@go mod download
-	@go mod verify
 
 ## fmt: Format code
 fmt:
@@ -181,36 +143,6 @@ deps-update:
 	@go mod tidy
 	@go mod verify
 
-## deps-verify: Verify dependencies
-deps-verify:
-	@echo "Verifying dependencies..."
-	@go mod verify
-	@go mod download
-
-## build-all: Build for all platforms
-build-all: build-linux build-darwin build-windows
-	@echo "Built for all platforms!"
-
-## build-linux: Build for Linux
-build-linux:
-	@echo "Building for Linux..."
-	@mkdir -p $(BUILD_DIR)
-	@GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 ./cmd/server
-	@GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 ./cmd/server
-
-## build-darwin: Build for macOS
-build-darwin:
-	@echo "Building for macOS..."
-	@mkdir -p $(BUILD_DIR)
-	@GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 ./cmd/server
-	@GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 ./cmd/server
-
-## build-windows: Build for Windows
-build-windows:
-	@echo "Building for Windows..."
-	@mkdir -p $(BUILD_DIR)
-	@GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe ./cmd/server
-
 ## setup: Initial project setup
 setup:
 	@echo "Setting up project..."
@@ -222,6 +154,8 @@ setup:
 		echo ".env already exists"; \
 	fi
 	@$(MAKE) install
+	@echo "Verifying dependencies..."
+	@go mod verify
 	@echo "Setup complete!"
 
 ## env-check: Verify environment variables
@@ -248,27 +182,3 @@ install-tools:
 	@echo "Installing staticcheck..."
 	@go install honnef.co/go/tools/cmd/staticcheck@latest
 	@echo "All tools installed!"
-
-## docker-build: Build Docker image
-docker-build:
-	@echo "Building Docker image..."
-	@docker build -t $(BINARY_NAME):$(VERSION) -t $(BINARY_NAME):latest .
-
-## docker-run: Run Docker container
-docker-run:
-	@echo "Running Docker container..."
-	@docker run -d --name $(BINARY_NAME) \
-		-p 4000:4000 \
-		-e PAYSTACK_SECRET_KEY=$(PAYSTACK_SECRET_KEY) \
-		$(BINARY_NAME):latest
-
-## docker-stop: Stop Docker container
-docker-stop:
-	@echo "Stopping Docker container..."
-	@docker stop $(BINARY_NAME) || true
-	@docker rm $(BINARY_NAME) || true
-
-## docker-clean: Remove Docker image and containers
-docker-clean: docker-stop
-	@echo "Cleaning Docker images..."
-	@docker rmi $(BINARY_NAME):latest $(BINARY_NAME):$(VERSION) || true
