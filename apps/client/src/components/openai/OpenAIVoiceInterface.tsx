@@ -3,6 +3,7 @@ import { Mic, MicOff, X, Search } from "lucide-react";
 import { useOpenAIVoiceAgent } from "./useOpenAIVoiceAgent";
 import VoiceOrb from "../VoiceOrb";
 import ConversationMessage from "../ConversationMessage";
+import { WidgetRenderer } from "../widgets/WidgetRenderer";
 import {
   Sidebar,
   SidebarContent,
@@ -158,9 +159,10 @@ const OpenAIVoiceInterface = () => {
       </div>
 
       {/* Messages Display - Near Bottom */}
-      <div className="w-full max-w-sm px-8 items-center mb-12 flex flex-col">
-        {messages.length > 0 ? (
+      <div className="w-full max-w-xl px-8 items-center mb-12 flex flex-col">
+        {messages.length > 0 || toolExecutions.length > 0 ? (
           <div className="space-y-4 w-full ">
+            {/* Display recent messages */}
             {messages.slice(-2).map((message, index) => (
               <div key={index} className={index === 0 ? "font-bold" : ""}>
                 <ConversationMessage
@@ -168,6 +170,26 @@ const OpenAIVoiceInterface = () => {
                   content={message.content}
                 />
               </div>
+            ))}
+
+            {/* Display widgets from recent tool executions */}
+            {toolExecutions.slice(-2).map((execution) => (
+              execution.widget && (
+                <div key={execution.id} className="mt-4">
+                  <WidgetRenderer
+                    spec={execution.widget}
+                    options={{
+                      onAction: (action, ctx) => {
+                        console.log('Widget action:', action, ctx);
+                        // Handle widget button clicks
+                        if (action.type === 'expand') {
+                          console.log('Expand widget');
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              )
             ))}
           </div>
         ) : (

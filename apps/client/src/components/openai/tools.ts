@@ -171,7 +171,61 @@ export const executeToolCall = async (toolName: string, args: any) => {
           currency: args.currency,
           amount_total: totalAmount
         },
-        message: `Successfully queued payment of ${args.currency} ${totalAmount.toLocaleString()} to ${args.items.length} contractor(s)`
+        message: `Successfully queued payment of ${args.currency} ${totalAmount.toLocaleString()} to ${args.items.length} contractor(s)`,
+
+        _widget: {
+          type: 'Frame',
+          size: 'md',
+          padding: 'md',
+          children: [
+            {
+              type: 'FrameHeader',
+              title: 'Payment Batch',
+              expandable: true
+            },
+            {
+              type: 'Row',
+              align: 'between',
+              children: [
+                {
+                  type: 'Col',
+                  gap: 'sm',
+                  children: [
+                    { type: 'Text', value: args.batch_reference, size: 'lg', weight: 'semibold' }
+                  ]
+                },
+                {
+                  type: 'Badge',
+                  label: 'Queued',
+                  variant: 'warning'
+                }
+              ]
+            },
+            { type: 'Divider', spacing: 'md' },
+            {
+              type: 'Row',
+              gap: 'lg',
+              children: [
+                {
+                  type: 'Col',
+                  gap: 'sm',
+                  children: [
+                    { type: 'Text', value: 'Total Amount', size: 'xs', color: 'muted' },
+                    { type: 'Amount', value: totalAmount, currency: args.currency, size: 'md', weight: 'semibold' }
+                  ]
+                },
+                {
+                  type: 'Col',
+                  gap: 'sm',
+                  children: [
+                    { type: 'Text', value: 'Recipients', size: 'xs', color: 'muted' },
+                    { type: 'Text', value: args.items.length.toString(), size: 'md', weight: 'semibold' }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       };
     
     case 'set_account_limits':
@@ -210,7 +264,67 @@ export const executeToolCall = async (toolName: string, args: any) => {
           state: 'active',
           expires_at: args.expires_at ?? null
         },
-        message: `Virtual card "${args.label}" created successfully (ending in ${last4})`
+        message: `Virtual card "${args.label}" created successfully (ending in ${last4})`,
+
+        _widget: {
+          type: 'Frame',
+          size: 'md',
+          padding: 'lg',
+          children: [
+            {
+              type: 'FrameHeader',
+              title: 'Virtual Card',
+              expandable: true
+            },
+            {
+              type: 'Row',
+              align: 'between',
+              children: [
+                { type: 'Text', value: args.label, size: 'lg', weight: 'semibold' },
+                { type: 'Badge', label: 'Active', variant: 'success' }
+              ]
+            },
+            { type: 'Divider', spacing: 'md' },
+            {
+              type: 'Col',
+              gap: 'md',
+              children: [
+                {
+                  type: 'Row',
+                  gap: 'md',
+                  children: [
+                    { type: 'Text', value: '****', size: 'xl', weight: 'bold' },
+                    { type: 'Text', value: '****', size: 'xl', weight: 'bold' },
+                    { type: 'Text', value: '****', size: 'xl', weight: 'bold' },
+                    { type: 'Text', value: last4, size: 'xl', weight: 'bold' }
+                  ]
+                },
+                {
+                  type: 'KeyValueList',
+                  gap: 'md',
+                  items: args.spend_limit ? [
+                    {
+                      type: 'KeyValueRow',
+                      label: 'Spend Limit',
+                      value: { type: 'Amount', value: args.spend_limit, currency: args.currency, size: 'sm' }
+                    },
+                    {
+                      type: 'KeyValueRow',
+                      label: 'Network',
+                      value: { type: 'Text', value: 'VISA', weight: 'medium' }
+                    }
+                  ] : [
+                    {
+                      type: 'KeyValueRow',
+                      label: 'Network',
+                      value: { type: 'Text', value: 'VISA', weight: 'medium' }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       };
     
     case 'send_invoice':
@@ -225,23 +339,119 @@ export const executeToolCall = async (toolName: string, args: any) => {
         hosted_invoice_url: `https://pay.moniewave.com/${invoiceId}`,
         due_date: args.due_date ?? null,
         customer_viewed: false,
-        message: `Invoice ${args.invoice_number} for ${args.currency} ${total.toLocaleString()} sent to ${args.customer.name}`
+        message: `Invoice ${args.invoice_number} for ${args.currency} ${total.toLocaleString()} sent to ${args.customer.name}`,
+
+        _widget: {
+          type: 'Frame',
+          size: 'md',
+          padding: 'md',
+          children: [
+            {
+              type: 'FrameHeader',
+              title: 'Invoice',
+              expandable: true
+            },
+            {
+              type: 'Row',
+              align: 'between',
+              children: [
+                { type: 'Text', value: args.invoice_number, size: 'lg', weight: 'semibold' },
+                { type: 'Badge', label: 'Sent', variant: 'default' }
+              ]
+            },
+            { type: 'Divider', spacing: 'md' },
+            {
+              type: 'KeyValueList',
+              gap: 'md',
+              dividers: true,
+              items: [
+                {
+                  type: 'KeyValueRow',
+                  label: 'Customer',
+                  value: { type: 'Text', value: args.customer.name, weight: 'medium' }
+                },
+                {
+                  type: 'KeyValueRow',
+                  label: 'Amount Due',
+                  value: { type: 'Amount', value: total, currency: args.currency, size: 'md', weight: 'semibold' },
+                  emphasis: true
+                },
+                args.due_date ? {
+                  type: 'KeyValueRow',
+                  label: 'Due Date',
+                  value: { type: 'Text', value: args.due_date, color: 'muted' }
+                } : null
+              ].filter(Boolean)
+            }
+          ]
+        }
       };
     
     case 'aggregate_transactions':
       if (args.metric === 'top_categories') {
+        const items = [
+          { category: 'Food', value: 18000 },
+          { category: 'Family Transfers', value: 42500 },
+          { category: 'Transport', value: 9000 }
+        ];
+        const totalValue = items.reduce((sum, item) => sum + item.value, 0);
+
         return {
           metric: args.metric,
-          items: [
-            { category: 'Food', value: 18000 },
-            { category: 'Family Transfers', value: 42500 },
-            { category: 'Transport', value: 9000 }
-          ],
+          items,
           currency: args.currency || 'NGN',
-          period: { from: args.from, to: args.to }
+          period: { from: args.from, to: args.to },
+
+          _widget: {
+            type: 'Frame',
+            size: 'md',
+            padding: 'md',
+            children: [
+              {
+                type: 'FrameHeader',
+                title: 'Transaction Analytics',
+                expandable: true
+              },
+              {
+                type: 'Col',
+                gap: 'md',
+                children: [
+                  {
+                    type: 'Row',
+                    align: 'center',
+                    gap: 'sm',
+                    children: [
+                      { type: 'Icon', name: 'TrendingUp', size: 'md', color: 'success' },
+                      { type: 'Text', value: 'Top Categories', size: 'lg', weight: 'semibold' }
+                    ]
+                  },
+                  { type: 'Divider', spacing: 'md' },
+                  {
+                    type: 'KeyValueList',
+                    gap: 'md',
+                    dividers: true,
+                    items: items.map(item => ({
+                      type: 'KeyValueRow',
+                      label: item.category,
+                      value: { type: 'Amount', value: item.value, currency: args.currency || 'NGN', size: 'sm', weight: 'medium' }
+                    }))
+                  },
+                  { type: 'Divider', spacing: 'md' },
+                  {
+                    type: 'Row',
+                    align: 'between',
+                    children: [
+                      { type: 'Text', value: 'Total', size: 'sm', weight: 'semibold' },
+                      { type: 'Amount', value: totalValue, currency: args.currency || 'NGN', size: 'md', weight: 'bold', color: 'emphasis' }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
         };
       }
-      
+
       const mockValue = Math.floor(Math.random() * 500000) + 100000;
       return {
         metric: args.metric,
@@ -251,7 +461,7 @@ export const executeToolCall = async (toolName: string, args: any) => {
       };
     
     case 'account_snapshot':
-      return {
+      const snapshotData = {
         balance: {
           currency: 'NGN',
           available: 720000
@@ -266,12 +476,69 @@ export const executeToolCall = async (toolName: string, args: any) => {
           paid: 3,
           value_paid: 610000
         },
-        top_beneficiaries: args.beneficiary_id 
+        top_beneficiaries: args.beneficiary_id
           ? [{ id: args.beneficiary_id, value: 42500 }]
           : [
               { id: 'sib-chioma', value: 42500 },
               { id: 'mom', value: 38000 }
             ]
+      };
+
+      return {
+        ...snapshotData,
+
+        _widget: {
+          type: 'Frame',
+          size: 'lg',
+          padding: 'lg',
+          children: [
+            {
+              type: 'FrameHeader',
+              title: 'Account Overview',
+              expandable: true
+            },
+            {
+              type: 'Col',
+              gap: 'lg',
+              children: [
+                {
+                  type: 'Col',
+                  gap: 'sm',
+                  align: 'center',
+                  children: [
+                    { type: 'Text', value: 'Available Balance', size: 'sm', color: 'muted' },
+                    { type: 'Amount', value: snapshotData.balance.available, currency: snapshotData.balance.currency, size: 'xl', weight: 'bold', color: 'emphasis' }
+                  ]
+                },
+                { type: 'Divider', spacing: 'lg' },
+                {
+                  type: 'Row',
+                  gap: 'lg',
+                  children: [
+                    {
+                      type: 'Col',
+                      gap: 'sm',
+                      children: [
+                        { type: 'Text', value: 'Transfers', size: 'xs', color: 'muted' },
+                        { type: 'Text', value: snapshotData.transfers.count.toString(), size: 'lg', weight: 'semibold' },
+                        { type: 'Amount', value: snapshotData.transfers.value, currency: snapshotData.balance.currency, size: 'sm', showCurrency: false }
+                      ]
+                    },
+                    {
+                      type: 'Col',
+                      gap: 'sm',
+                      children: [
+                        { type: 'Text', value: 'Invoices Paid', size: 'xs', color: 'muted' },
+                        { type: 'Text', value: `${snapshotData.invoices.paid}/${snapshotData.invoices.sent}`, size: 'lg', weight: 'semibold' },
+                        { type: 'Amount', value: snapshotData.invoices.value_paid, currency: snapshotData.balance.currency, size: 'sm', showCurrency: false }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       };
     
     default:

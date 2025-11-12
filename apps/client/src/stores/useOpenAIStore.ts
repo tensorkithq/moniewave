@@ -12,6 +12,7 @@ export interface ToolExecution {
   toolName: string;
   arguments: any;
   result: any;
+  widget?: any; // Widget specification from result._widget
   timestamp: string;
   duration?: number;
 }
@@ -36,8 +37,11 @@ export const useOpenAIStore = create<OpenAIStore>((set) => ({
     messages: [...state.messages, message] 
   })),
   
-  addToolExecution: (execution) => set((state) => ({ 
-    toolExecutions: [...state.toolExecutions, execution] 
+  addToolExecution: (execution) => set((state) => ({
+    toolExecutions: [...state.toolExecutions, {
+      ...execution,
+      widget: execution.result?._widget || null
+    }]
   })),
   
   addRawEvent: (event) => set((state) => ({ 
