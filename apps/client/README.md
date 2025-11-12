@@ -1,73 +1,175 @@
-# Welcome to your Lovable project
+# Moniewave Client
 
-## Project info
+Voice-powered financial assistant application built with OpenAI's Realtime API for natural voice interactions.
 
-**URL**: https://lovable.dev/projects/76a4acbd-1450-45d0-9a9b-6441e9dd2ed2
+## Overview
 
-## How can I edit this code?
+Moniewave enables users to manage finances through natural voice commands with support for payments, invoicing, account limits, virtual cards, and transaction analytics.
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- **Framework**: React 18 with TypeScript
+- **Build Tool**: Vite 5
+- **Styling**: Tailwind CSS with shadcn/ui components
+- **Voice AI**: OpenAI Realtime API (WebRTC speech-to-speech)
+- **Backend**: Supabase (Edge Functions, client SDK)
+- **State Management**: Zustand
+- **Data Fetching**: TanStack Query (React Query)
+- **HTTP Client**: ky
+- **Testing**: Vitest
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/76a4acbd-1450-45d0-9a9b-6441e9dd2ed2) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Node.js 18+ and npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Supabase account and project
+- OpenAI API key
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### Installation
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Clone the repository
+git clone <repository-url>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Navigate to the client directory
+cd moniewave/apps/client
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your configuration
+
+# Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The app will be available at `http://localhost:8080`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Environment Variables
 
-**Use GitHub Codespaces**
+Create a `.env` file with the following variables:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key
+VITE_SUPABASE_PROJECT_ID=your-project-id
+VITE_SERVER_URL=http://localhost:4000
+```
 
-## What technologies are used for this project?
+**Supabase Secrets** (set via Supabase CLI):
+```bash
+supabase secrets set OPENAI_API_KEY=sk-proj-...
+```
 
-This project is built with:
+## Available Scripts
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```bash
+npm run dev          # Start development server on :8080
+npm run build        # Production build
+npm run build:dev    # Development mode build
+npm run preview      # Preview production build
+npm run lint         # Run ESLint
+npm run test         # Run tests in watch mode
+npm run test:run     # Run tests once
+npm run test:ui      # Open Vitest UI
+```
 
-## How can I deploy this project?
+## Features
 
-Simply open [Lovable](https://lovable.dev/projects/76a4acbd-1450-45d0-9a9b-6441e9dd2ed2) and click on Share -> Publish.
+### Voice Agent Tools
 
-## Can I connect a custom domain to my Lovable project?
+- **pay_contractors_bulk** - Bulk payment processing
+- **set_account_limits** - Balance and transfer limits
+- **set_beneficiary_transfer_limit** - Per-beneficiary policies
+- **create_virtual_card** - Virtual debit card generation
+- **send_invoice** - Invoice creation and sending
+- **aggregate_transactions** - Analytics and reporting
+- **account_snapshot** - Balance and KPI summary
 
-Yes, you can!
+### Widget System
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+JSON-driven widget system for rendering financial data with primitives like Frame, Text, Amount, Badge, KeyValueList, etc. See [Widget Documentation](src/components/widgets/README.md) for details.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Project Structure
+
+```
+src/
+├── components/
+│   ├── openai/              # OpenAI Realtime integration
+│   ├── widgets/             # JSON widget system
+│   └── ui/                  # shadcn/ui components
+├── hooks/                   # Audio analysis hooks
+├── integrations/supabase/   # Supabase client config
+├── lib/                     # API client (ky)
+├── pages/                   # Route components
+├── stores/                  # Zustand state stores
+└── App.tsx                  # Router configuration
+```
+
+## Architecture
+
+The application uses OpenAI's Realtime API for voice interactions with a custom tool execution system:
+
+1. User speaks voice command
+2. OpenAI processes and triggers tool call
+3. Client requests user approval
+4. On approval, HTTP request sent to Go server API
+5. Server executes business logic with Paystack
+6. Response rendered as widget in UI
+
+See [CLAUDE.md](CLAUDE.md) for detailed architecture documentation.
+
+## Development
+
+### Path Aliases
+
+Vite is configured with `@` alias pointing to `./src`:
+
+```typescript
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+```
+
+### Adding New Tools
+
+1. Define tool in `src/components/openai/tools.ts`
+2. Implement execution logic with server API call
+3. Create widget structure for response visualization
+4. Test with voice commands
+
+### Testing
+
+```bash
+# Run all tests
+npm run test:run
+
+# Run tests in watch mode
+npm test
+
+# Open Vitest UI
+npm run test:ui
+```
+
+## Deployment
+
+Build the application:
+
+```bash
+npm run build
+```
+
+The `dist/` directory contains the production-ready static files that can be deployed to any static hosting service (Vercel, Netlify, Cloudflare Pages, etc.).
+
+## Related Documentation
+
+- [Project Root README](../../README.md) - Monorepo overview
+- [CLAUDE.md](CLAUDE.md) - AI assistant context and architecture
+- [Widget System](src/components/widgets/README.md) - Widget component documentation
+- [MILESTONE.md](../../MILESTONE.md) - Implementation roadmap
+
+## License
+
+Private project - All rights reserved
