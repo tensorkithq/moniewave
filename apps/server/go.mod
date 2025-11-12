@@ -1,10 +1,11 @@
 module paystack.mpc.proxy
 
-go 1.25.3
+go 1.23.0
 
 require (
 	github.com/borderlesshq/paystack-go v0.0.3
-	github.com/mark3labs/mcp-go v0.42.0
+	github.com/go-chi/chi/v5 v5.0.12
+	github.com/go-chi/cors v1.2.1
 )
 
 require (

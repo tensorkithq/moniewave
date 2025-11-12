@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"paystack.mpc.proxy/internal/paystack"
 
 	paystackSDK "github.com/borderlesshq/paystack-go"
-	"github.com/mark3labs/mcp-go/mcp"
 )
 
 type TransactionHandler struct {
@@ -18,57 +18,86 @@ func NewTransactionHandler(client *paystack.Client) *TransactionHandler {
 	return &TransactionHandler{client: client}
 }
 
-func (h *TransactionHandler) Initialize(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	email := request.GetString("email", "")
-	amount := request.GetInt("amount", 0)
+type InitializeTransactionRequest struct {
+	Email       string  `json:"email"`
+	Amount      float64 `json:"amount"`
+	Reference   string  `json:"reference,omitempty"`
+	CallbackURL string  `json:"callback_url,omitempty"`
+	Currency    string  `json:"currency,omitempty"`
+}
 
-	if email == "" || amount == 0 {
-		return ErrorResult(fmt.Errorf("email and amount are required")), nil
+type VerifyTransactionRequest struct {
+	Reference string `json:"reference"`
+}
+
+func (h *TransactionHandler) Initialize(w http.ResponseWriter, r *http.Request) {
+	var req InitializeTransactionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		WriteJSONBadRequest(w, "Invalid request body")
+		return
+	}
+
+	if req.Email == "" || req.Amount == 0 {
+		WriteJSONBadRequest(w, "email and amount are required")
+		return
 	}
 
 	txn := &paystackSDK.TransactionRequest{
-		Email:       email,
-		Amount:      float64(amount),
-		Reference:   request.GetString("reference", ""),
-		CallbackURL: request.GetString("callback_url", ""),
-		Currency:    request.GetString("currency", ""),
+		Email:       req.Email,
+		Amount:      req.Amount,
+		Reference:   req.Reference,
+		CallbackURL: req.CallbackURL,
+		Currency:    req.Currency,
 	}
 
 	result, err := h.client.Transaction.Initialize(txn)
 	if err != nil {
-		return ErrorResult(err), nil
+		WriteJSONError(w, err, http.StatusInternalServerError)
+		return
 	}
-	return SuccessResult(result)
+	WriteJSONSuccess(w, result)
 }
 
-func (h *TransactionHandler) Verify(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	reference := request.GetString("reference", "")
-	if reference == "" {
-		return ErrorResult(fmt.Errorf("reference is required")), nil
+func (h *TransactionHandler) Verify(w http.ResponseWriter, r *http.Request) {
+	var req VerifyTransactionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		WriteJSONBadRequest(w, "Invalid request body")
+		return
 	}
 
-	result, err := h.client.Transaction.Verify(reference)
+	if req.Reference == "" {
+		WriteJSONBadRequest(w, "reference is required")
+		return
+	}
+
+	result, err := h.client.Transaction.Verify(req.Reference)
 	if err != nil {
-		return ErrorResult(err), nil
+		WriteJSONError(w, err, http.StatusInternalServerError)
+		return
 	}
-	return SuccessResult(result)
+	WriteJSONSuccess(w, result)
 }
 
-func (h *TransactionHandler) List(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	count := request.GetInt("count", 0)
-	offset := request.GetInt("offset", 0)
+func (h *TransactionHandler) List(w http.ResponseWriter, r *http.Request) {
+	var req ListRequest
+	if r.Body != http.NoBody {
+		json.NewDecoder(r.Body).Decode(&req)
+	}
 
-	if count > 0 {
-		result, err := h.client.Transaction.ListN(count, offset)
+	if req.Count > 0 {
+		result, err := h.client.Transaction.ListN(req.Count, req.Offset)
 		if err != nil {
-			return ErrorResult(err), nil
+			WriteJSONError(w, err, http.StatusInternalServerError)
+			return
 		}
-		return SuccessResult(result)
+		WriteJSONSuccess(w, result)
+		return
 	}
 
 	result, err := h.client.Transaction.List()
 	if err != nil {
-		return ErrorResult(err), nil
+		WriteJSONError(w, fmt.Errorf("failed to list transactions: %w", err), http.StatusInternalServerError)
+		return
 	}
-	return SuccessResult(result)
+	WriteJSONSuccess(w, result)
 }

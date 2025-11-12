@@ -1,12 +1,11 @@
 package handlers
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"paystack.mpc.proxy/internal/paystack"
-
-	"github.com/mark3labs/mcp-go/mcp"
 )
 
 type BankHandler struct {
@@ -17,25 +16,36 @@ func NewBankHandler(client *paystack.Client) *BankHandler {
 	return &BankHandler{client: client}
 }
 
-func (h *BankHandler) List(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	result, err := h.client.Bank.List()
-	if err != nil {
-		return ErrorResult(err), nil
-	}
-	return SuccessResult(result)
+type ResolveAccountRequest struct {
+	AccountNumber string `json:"account_number"`
+	BankCode      string `json:"bank_code"`
 }
 
-func (h *BankHandler) ResolveAccount(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	accountNumber := request.GetString("account_number", "")
-	bankCode := request.GetString("bank_code", "")
-
-	if accountNumber == "" || bankCode == "" {
-		return ErrorResult(fmt.Errorf("account_number and bank_code are required")), nil
-	}
-
-	result, err := h.client.Bank.ResolveAccountNumber(accountNumber, bankCode)
+func (h *BankHandler) List(w http.ResponseWriter, r *http.Request) {
+	result, err := h.client.Bank.List()
 	if err != nil {
-		return ErrorResult(err), nil
+		WriteJSONError(w, fmt.Errorf("failed to list banks: %w", err), http.StatusInternalServerError)
+		return
 	}
-	return SuccessResult(result)
+	WriteJSONSuccess(w, result)
+}
+
+func (h *BankHandler) ResolveAccount(w http.ResponseWriter, r *http.Request) {
+	var req ResolveAccountRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		WriteJSONBadRequest(w, "Invalid request body")
+		return
+	}
+
+	if req.AccountNumber == "" || req.BankCode == "" {
+		WriteJSONBadRequest(w, "account_number and bank_code are required")
+		return
+	}
+
+	result, err := h.client.Bank.ResolveAccountNumber(req.AccountNumber, req.BankCode)
+	if err != nil {
+		WriteJSONError(w, err, http.StatusInternalServerError)
+		return
+	}
+	WriteJSONSuccess(w, result)
 }
