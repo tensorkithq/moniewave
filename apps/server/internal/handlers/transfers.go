@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"paystack.mpc.proxy/internal/paystack"
 
 	paystackSDK "github.com/borderlesshq/paystack-go"
-	"github.com/mark3labs/mcp-go/mcp"
 )
 
 type TransferHandler struct {
@@ -18,50 +18,76 @@ func NewTransferHandler(client *paystack.Client) *TransferHandler {
 	return &TransferHandler{client: client}
 }
 
-func (h *TransferHandler) CreateRecipient(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	recipientType := request.GetString("type", "")
-	name := request.GetString("name", "")
-	accountNumber := request.GetString("account_number", "")
-	bankCode := request.GetString("bank_code", "")
+type CreateRecipientRequest struct {
+	Type          string `json:"type"`
+	Name          string `json:"name"`
+	AccountNumber string `json:"account_number"`
+	BankCode      string `json:"bank_code"`
+	Currency      string `json:"currency,omitempty"`
+}
 
-	if recipientType == "" || name == "" || accountNumber == "" || bankCode == "" {
-		return ErrorResult(fmt.Errorf("type, name, account_number, and bank_code are required")), nil
+type InitiateTransferRequest struct {
+	Source    string  `json:"source"`
+	Amount    float32 `json:"amount"`
+	Recipient string  `json:"recipient"`
+	Reason    string  `json:"reason,omitempty"`
+}
+
+func (h *TransferHandler) CreateRecipient(w http.ResponseWriter, r *http.Request) {
+	var req CreateRecipientRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		WriteJSONBadRequest(w, "Invalid request body")
+		return
+	}
+
+	if req.Type == "" || req.Name == "" || req.AccountNumber == "" || req.BankCode == "" {
+		WriteJSONBadRequest(w, "type, name, account_number, and bank_code are required")
+		return
+	}
+
+	if req.Currency == "" {
+		req.Currency = "NGN"
 	}
 
 	recipient := &paystackSDK.TransferRecipient{
-		Type:          recipientType,
-		Name:          name,
-		AccountNumber: accountNumber,
-		BankCode:      bankCode,
-		Currency:      request.GetString("currency", "NGN"),
+		Type:          req.Type,
+		Name:          req.Name,
+		AccountNumber: req.AccountNumber,
+		BankCode:      req.BankCode,
+		Currency:      req.Currency,
 	}
 
 	result, err := h.client.Transfer.CreateRecipient(recipient)
 	if err != nil {
-		return ErrorResult(err), nil
+		WriteJSONError(w, err, http.StatusInternalServerError)
+		return
 	}
-	return SuccessResult(result)
+	WriteJSONSuccess(w, result)
 }
 
-func (h *TransferHandler) Initiate(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	source := request.GetString("source", "")
-	amount := request.GetInt("amount", 0)
-	recipient := request.GetString("recipient", "")
-
-	if source == "" || amount == 0 || recipient == "" {
-		return ErrorResult(fmt.Errorf("source, amount, and recipient are required")), nil
+func (h *TransferHandler) Initiate(w http.ResponseWriter, r *http.Request) {
+	var req InitiateTransferRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		WriteJSONBadRequest(w, "Invalid request body")
+		return
 	}
 
-	req := &paystackSDK.TransferRequest{
-		Source:    source,
-		Amount:    float32(amount),
-		Recipient: recipient,
-		Reason:    request.GetString("reason", ""),
+	if req.Source == "" || req.Amount == 0 || req.Recipient == "" {
+		WriteJSONBadRequest(w, "source, amount, and recipient are required")
+		return
 	}
 
-	result, err := h.client.Transfer.Initiate(req)
+	transferReq := &paystackSDK.TransferRequest{
+		Source:    req.Source,
+		Amount:    req.Amount,
+		Recipient: req.Recipient,
+		Reason:    req.Reason,
+	}
+
+	result, err := h.client.Transfer.Initiate(transferReq)
 	if err != nil {
-		return ErrorResult(err), nil
+		WriteJSONError(w, err, http.StatusInternalServerError)
+		return
 	}
-	return SuccessResult(result)
+	WriteJSONSuccess(w, result)
 }

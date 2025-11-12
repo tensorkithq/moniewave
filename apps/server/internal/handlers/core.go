@@ -1,12 +1,10 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
+	"net/http"
 
 	"paystack.mpc.proxy/internal/paystack"
-
-	"github.com/mark3labs/mcp-go/mcp"
 )
 
 type CoreHandler struct {
@@ -17,10 +15,11 @@ func NewCoreHandler(client *paystack.Client) *CoreHandler {
 	return &CoreHandler{client: client}
 }
 
-func (h *CoreHandler) CheckBalance(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *CoreHandler) CheckBalance(w http.ResponseWriter, r *http.Request) {
 	resp, err := h.client.SafeCheckBalance()
 	if err != nil {
-		return ErrorResult(fmt.Errorf("failed to check balance: %w", err)), nil
+		WriteJSONError(w, fmt.Errorf("failed to check balance: %w", err), http.StatusInternalServerError)
+		return
 	}
-	return SuccessResult(resp)
+	WriteJSONSuccess(w, resp)
 }

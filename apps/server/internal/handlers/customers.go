@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"paystack.mpc.proxy/internal/paystack"
 
 	paystackSDK "github.com/borderlesshq/paystack-go"
-	"github.com/mark3labs/mcp-go/mcp"
 )
 
 type CustomerHandler struct {
@@ -18,41 +18,65 @@ func NewCustomerHandler(client *paystack.Client) *CustomerHandler {
 	return &CustomerHandler{client: client}
 }
 
-func (h *CustomerHandler) Create(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	email := request.GetString("email", "")
-	if email == "" {
-		return ErrorResult(fmt.Errorf("email is required")), nil
+type CreateCustomerRequest struct {
+	Email     string `json:"email"`
+	FirstName string `json:"first_name,omitempty"`
+	LastName  string `json:"last_name,omitempty"`
+	Phone     string `json:"phone,omitempty"`
+}
+
+type ListRequest struct {
+	Count  int `json:"count,omitempty"`
+	Offset int `json:"offset,omitempty"`
+}
+
+func (h *CustomerHandler) Create(w http.ResponseWriter, r *http.Request) {
+	var req CreateCustomerRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		WriteJSONBadRequest(w, "Invalid request body")
+		return
+	}
+
+	if req.Email == "" {
+		WriteJSONBadRequest(w, "email is required")
+		return
 	}
 
 	customer := &paystackSDK.Customer{
-		Email:     email,
-		FirstName: request.GetString("first_name", ""),
-		LastName:  request.GetString("last_name", ""),
-		Phone:     request.GetString("phone", ""),
+		Email:     req.Email,
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		Phone:     req.Phone,
 	}
 
 	result, err := h.client.Customer.Create(customer)
 	if err != nil {
-		return ErrorResult(err), nil
+		WriteJSONError(w, err, http.StatusInternalServerError)
+		return
 	}
-	return SuccessResult(result)
+	WriteJSONSuccess(w, result)
 }
 
-func (h *CustomerHandler) List(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	count := request.GetInt("count", 0)
-	offset := request.GetInt("offset", 0)
+func (h *CustomerHandler) List(w http.ResponseWriter, r *http.Request) {
+	var req ListRequest
+	if r.Body != http.NoBody {
+		json.NewDecoder(r.Body).Decode(&req)
+	}
 
-	if count > 0 {
-		result, err := h.client.Customer.ListN(count, offset)
+	if req.Count > 0 {
+		result, err := h.client.Customer.ListN(req.Count, req.Offset)
 		if err != nil {
-			return ErrorResult(err), nil
+			WriteJSONError(w, err, http.StatusInternalServerError)
+			return
 		}
-		return SuccessResult(result)
+		WriteJSONSuccess(w, result)
+		return
 	}
 
 	result, err := h.client.Customer.List()
 	if err != nil {
-		return ErrorResult(err), nil
+		WriteJSONError(w, fmt.Errorf("failed to list customers: %w", err), http.StatusInternalServerError)
+		return
 	}
-	return SuccessResult(result)
+	WriteJSONSuccess(w, result)
 }

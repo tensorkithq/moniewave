@@ -2,47 +2,106 @@ package server
 
 import (
 	"log"
+	"net/http"
+	"time"
 
 	"paystack.mpc.proxy/internal/config"
+	"paystack.mpc.proxy/internal/handlers"
 	"paystack.mpc.proxy/internal/paystack"
-	"paystack.mpc.proxy/internal/tools"
 
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 )
 
-// Server wraps the MCP server
+// Server wraps the HTTP server
 type Server struct {
-	mcp    *server.MCPServer
+	router *chi.Mux
 	config *config.Config
 }
 
-// New creates a new MCP server instance
+// New creates a new HTTP server instance with Chi router
 func New(cfg *config.Config) *Server {
 	// Create Paystack client
 	client := paystack.NewClient(cfg.PaystackSecretKey)
 
-	// Create MCP server
-	mcpServer := server.NewMCPServer(
-		"Paystack MCP Server",
-		"1.0.0",
-		server.WithToolCapabilities(true),
-		server.WithLogging(),
-	)
+	// Create Chi router
+	r := chi.NewRouter()
 
-	// Register all tools
-	registry := tools.NewRegistry(client)
-	registry.RegisterAll(mcpServer)
+	// Middleware
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.Timeout(60 * time.Second))
+
+	// CORS configuration
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"POST", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
+
+	// Initialize handlers
+	coreHandler := handlers.NewCoreHandler(client)
+	customerHandler := handlers.NewCustomerHandler(client)
+	transactionHandler := handlers.NewTransactionHandler(client)
+	transferHandler := handlers.NewTransferHandler(client)
+	planHandler := handlers.NewPlanHandler(client)
+	subscriptionHandler := handlers.NewSubscriptionHandler(client)
+	bankHandler := handlers.NewBankHandler(client)
+	subAccountHandler := handlers.NewSubAccountHandler(client)
+
+	// Routes
+	r.Route("/api/v1", func(r chi.Router) {
+		// Core routes
+		r.Post("/balance", coreHandler.CheckBalance)
+
+		// Customer routes
+		r.Post("/customers/create", customerHandler.Create)
+		r.Post("/customers/list", customerHandler.List)
+
+		// Transaction routes
+		r.Post("/transactions/initialize", transactionHandler.Initialize)
+		r.Post("/transactions/verify", transactionHandler.Verify)
+		r.Post("/transactions/list", transactionHandler.List)
+
+		// Transfer routes
+		r.Post("/transfers/recipient/create", transferHandler.CreateRecipient)
+		r.Post("/transfers/initiate", transferHandler.Initiate)
+
+		// Plan routes
+		r.Post("/plans/list", planHandler.List)
+
+		// Subscription routes
+		r.Post("/subscriptions/list", subscriptionHandler.List)
+
+		// Bank routes
+		r.Post("/banks/list", bankHandler.List)
+		r.Post("/banks/resolve", bankHandler.ResolveAccount)
+
+		// SubAccount routes
+		r.Post("/subaccounts/list", subAccountHandler.List)
+	})
+
+	// Health check endpoint
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
 
 	return &Server{
-		mcp:    mcpServer,
+		router: r,
 		config: cfg,
 	}
 }
 
-// Start starts the SSE server
+// Start starts the HTTP server
 func (s *Server) Start() error {
-	sse := server.NewSSEServer(s.mcp)
 	addr := ":" + s.config.ServerPort
-	log.Printf("Starting Paystack MCP Server on %s", addr)
-	return sse.Start(addr)
+	log.Printf("Starting Paystack HTTP Server on %s", addr)
+	return http.ListenAndServe(addr, s.router)
 }

@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
 
 	"paystack.mpc.proxy/internal/paystack"
-
-	"github.com/mark3labs/mcp-go/mcp"
 )
 
 type SubscriptionHandler struct {
@@ -16,21 +16,26 @@ func NewSubscriptionHandler(client *paystack.Client) *SubscriptionHandler {
 	return &SubscriptionHandler{client: client}
 }
 
-func (h *SubscriptionHandler) List(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	count := request.GetInt("count", 0)
-	offset := request.GetInt("offset", 0)
+func (h *SubscriptionHandler) List(w http.ResponseWriter, r *http.Request) {
+	var req ListRequest
+	if r.Body != http.NoBody {
+		json.NewDecoder(r.Body).Decode(&req)
+	}
 
-	if count > 0 {
-		result, err := h.client.Subscription.ListN(count, offset)
+	if req.Count > 0 {
+		result, err := h.client.Subscription.ListN(req.Count, req.Offset)
 		if err != nil {
-			return ErrorResult(err), nil
+			WriteJSONError(w, err, http.StatusInternalServerError)
+			return
 		}
-		return SuccessResult(result)
+		WriteJSONSuccess(w, result)
+		return
 	}
 
 	result, err := h.client.Subscription.List()
 	if err != nil {
-		return ErrorResult(err), nil
+		WriteJSONError(w, fmt.Errorf("failed to list subscriptions: %w", err), http.StatusInternalServerError)
+		return
 	}
-	return SuccessResult(result)
+	WriteJSONSuccess(w, result)
 }
