@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://moniewave.com/schemas/widget-primitives.json",
+  "$id": "https://moniewave.tecmie.com/schemas/widget-primitives.json",
   "title": "Widget Primitives",
   "description": "JSON Schema for Moniewave widget system primitives",
   "definitions": {
