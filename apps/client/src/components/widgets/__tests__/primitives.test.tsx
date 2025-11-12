@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { validateWidget, safeValidateWidget } from '../schemas';
+import { validateWidget, safeValidateWidget, ActionSchema } from '../schemas';
 
 describe('Widget Schema Validation', () => {
   it('should validate a simple Text widget', () => {
@@ -210,7 +210,6 @@ describe('Widget Action Types', () => {
       toolCallId: 'test-123'
     };
 
-    const { ActionSchema } = require('../schemas');
     const result = ActionSchema.parse(action);
     expect(result.type).toBe('approve_tool');
     expect(result.toolCallId).toBe('test-123');
@@ -222,7 +221,6 @@ describe('Widget Action Types', () => {
       target: 'fullscreen'
     };
 
-    const { ActionSchema } = require('../schemas');
     const result = ActionSchema.parse(action);
     expect(result.type).toBe('expand');
     expect(result.target).toBe('fullscreen');
