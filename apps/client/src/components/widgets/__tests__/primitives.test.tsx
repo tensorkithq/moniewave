@@ -5,7 +5,19 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { validateWidget, safeValidateWidget, ActionSchema } from '../schemas';
+import {
+  validateWidget,
+  safeValidateWidget,
+  ActionSchema,
+  validateWidgetTypeWithMetadata,
+} from '../schemas';
+import {
+  getWidgetMetadata,
+  isValidWidgetType,
+  getWidgetsOfKind,
+  canEmitAction,
+} from '../registry';
+import { WIDGET_METADATA } from '../types';
 
 describe('Widget Schema Validation', () => {
   it('should validate a simple Text widget', () => {
@@ -224,5 +236,165 @@ describe('Widget Action Types', () => {
     const result = ActionSchema.parse(action);
     expect(result.type).toBe('expand');
     expect(result.target).toBe('fullscreen');
+  });
+});
+
+describe('Widget Type Schema', () => {
+  it('should classify widgets correctly', () => {
+    const resources = getWidgetsOfKind('Resource');
+    const actions = getWidgetsOfKind('Action');
+
+    // Check Resource widgets
+    expect(resources).toContain('Frame');
+    expect(resources).toContain('Text');
+    expect(resources).toContain('Row');
+    expect(resources).toContain('Col');
+    expect(resources).toContain('Spacer');
+    expect(resources).toContain('Divider');
+    expect(resources).toContain('Icon');
+    expect(resources).toContain('Avatar');
+    expect(resources).toContain('Amount');
+    expect(resources).toContain('Time');
+    expect(resources).toContain('Badge');
+    expect(resources).toContain('KeyValueRow');
+    expect(resources).toContain('KeyValueList');
+
+    // Check Action widgets
+    expect(actions).toContain('Button');
+    expect(actions).toContain('ButtonGroup');
+
+    // Verify counts
+    expect(resources.length).toBe(14);
+    expect(actions.length).toBe(2);
+  });
+
+  it('should validate widget metadata', () => {
+    const frameMeta = getWidgetMetadata('Frame');
+    expect(frameMeta).toBeDefined();
+    expect(frameMeta?.kind).toBe('Resource');
+    expect(frameMeta?.category).toBe('layout');
+    expect(frameMeta?.mutable).toBe(false);
+    expect(frameMeta?.description).toBe('Main widget container');
+
+    const buttonMeta = getWidgetMetadata('Button');
+    expect(buttonMeta).toBeDefined();
+    expect(buttonMeta?.kind).toBe('Action');
+    expect(buttonMeta?.category).toBe('interactive');
+    expect(buttonMeta?.mutable).toBe(true);
+    expect(buttonMeta?.allowedActions).toContain('approve_tool');
+    expect(buttonMeta?.allowedActions).toContain('reject_tool');
+  });
+
+  it('should validate action targeting', () => {
+    // Button can emit allowed actions
+    expect(canEmitAction('Button', 'approve_tool')).toBe(true);
+    expect(canEmitAction('Button', 'reject_tool')).toBe(true);
+    expect(canEmitAction('Button', 'navigate')).toBe(true);
+    expect(canEmitAction('Button', 'share')).toBe(true);
+    expect(canEmitAction('Button', 'download')).toBe(true);
+    expect(canEmitAction('Button', 'emit')).toBe(true);
+
+    // Button cannot emit unknown actions
+    expect(canEmitAction('Button', 'unknown_action')).toBe(false);
+
+    // Resource widgets cannot emit actions
+    expect(canEmitAction('Frame', 'approve_tool')).toBe(false);
+    expect(canEmitAction('Text', 'navigate')).toBe(false);
+    expect(canEmitAction('Badge', 'share')).toBe(false);
+  });
+
+  it('should reject Resource widgets with actions', () => {
+    const spec = {
+      type: 'Text',
+      value: 'Click me',
+      onClickAction: { type: 'approve_tool', toolCallId: '123' },
+    };
+
+    const result = validateWidgetTypeWithMetadata(spec);
+    expect(result).toBe(false);
+  });
+
+  it('should accept Action widgets with allowed actions', () => {
+    const spec = {
+      type: 'Button',
+      label: 'Approve',
+      onClickAction: { type: 'approve_tool', toolCallId: '123' },
+    };
+
+    const result = validateWidgetTypeWithMetadata(spec);
+    expect(result).toBe(true);
+  });
+
+  it('should reject Action widgets with disallowed actions', () => {
+    const spec = {
+      type: 'Button',
+      label: 'Click me',
+      onClickAction: { type: 'unknown_action', payload: {} },
+    };
+
+    const result = validateWidgetTypeWithMetadata(spec);
+    expect(result).toBe(false);
+  });
+
+  it('should validate widget type existence', () => {
+    expect(isValidWidgetType('Frame')).toBe(true);
+    expect(isValidWidgetType('Button')).toBe(true);
+    expect(isValidWidgetType('Text')).toBe(true);
+    expect(isValidWidgetType('UnknownWidget')).toBe(false);
+  });
+
+  it('should have metadata for all 16 widgets', () => {
+    const expectedWidgets = [
+      // Layout
+      'Frame',
+      'FrameHeader',
+      'Row',
+      'Col',
+      'Spacer',
+      'Divider',
+      // Content
+      'Text',
+      'Icon',
+      'Avatar',
+      'Amount',
+      'Time',
+      'Badge',
+      // Interactive
+      'Button',
+      // Patterns
+      'KeyValueRow',
+      'KeyValueList',
+      'ButtonGroup',
+    ];
+
+    expectedWidgets.forEach((widgetType) => {
+      const meta = getWidgetMetadata(widgetType);
+      expect(meta).toBeDefined();
+      expect(meta?.kind).toBeDefined();
+      expect(meta?.category).toBeDefined();
+      expect(meta?.mutable).toBeDefined();
+    });
+
+    expect(Object.keys(WIDGET_METADATA).length).toBe(16);
+  });
+
+  it('should categorize widgets correctly', () => {
+    // Layout category
+    expect(getWidgetMetadata('Frame')?.category).toBe('layout');
+    expect(getWidgetMetadata('Row')?.category).toBe('layout');
+    expect(getWidgetMetadata('Col')?.category).toBe('layout');
+
+    // Content category
+    expect(getWidgetMetadata('Text')?.category).toBe('content');
+    expect(getWidgetMetadata('Icon')?.category).toBe('content');
+    expect(getWidgetMetadata('Amount')?.category).toBe('content');
+
+    // Interactive category
+    expect(getWidgetMetadata('Button')?.category).toBe('interactive');
+
+    // Pattern category
+    expect(getWidgetMetadata('KeyValueRow')?.category).toBe('pattern');
+    expect(getWidgetMetadata('KeyValueList')?.category).toBe('pattern');
+    expect(getWidgetMetadata('ButtonGroup')?.category).toBe('pattern');
   });
 });

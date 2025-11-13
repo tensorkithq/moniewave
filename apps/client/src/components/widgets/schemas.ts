@@ -5,6 +5,7 @@
  */
 
 import { z } from 'zod';
+import { WIDGET_METADATA } from './types';
 
 // Base schema for all widgets
 const BaseSchema = z.object({
@@ -220,6 +221,53 @@ export function validateWidget(spec: unknown): any {
 export function safeValidateWidget(spec: unknown): z.SafeParseReturnType<any, any> {
   return WidgetNodeSchema.safeParse(spec);
 }
+
+// Metadata schema for validation
+const MetadataSchema = z.object({
+  kind: z.enum(['Resource', 'Action']),
+  category: z.enum(['layout', 'content', 'interactive', 'pattern']),
+  mutable: z.boolean(),
+  allowedActions: z.array(z.string()).optional(),
+  description: z.string().optional(),
+  deprecated: z.boolean().optional(),
+});
+
+/**
+ * Validate a widget type against metadata rules
+ */
+export function validateWidgetTypeWithMetadata(spec: any): boolean {
+  if (typeof spec.type !== 'string') return false;
+
+  const metadata = WIDGET_METADATA[spec.type];
+  if (!metadata) return false;
+
+  // Resource widgets shouldn't have onClickAction
+  if (metadata.kind === 'Resource' && spec.onClickAction) {
+    console.warn(
+      `Widget type ${spec.type} is a Resource and shouldn't have onClickAction`
+    );
+    return false;
+  }
+
+  // Action validation
+  if (metadata.kind === 'Action' && spec.onClickAction) {
+    const actionType = spec.onClickAction.type;
+    if (
+      metadata.allowedActions &&
+      !metadata.allowedActions.includes(actionType)
+    ) {
+      console.warn(
+        `Widget ${spec.type} cannot emit action ${actionType}`
+      );
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// Export for testing
+export { MetadataSchema };
 
 // Export all schemas for testing and advanced use
 export {
