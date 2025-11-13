@@ -86,7 +86,7 @@
             "align": "between",
             "children": [
               { "type": "Text", "value": "Total", "size": "sm", "weight": "semibold" },
-              { "type": "Amount", "value": 69500, "currency": "NGN", "size": "md", "weight": "bold", "color": "emphasis" }
+              { "type": "Amount", "value": 69500, "currency": "NGN", "size": "md", "weight": "bold", "color": "default" }
             ]
           }
         ]

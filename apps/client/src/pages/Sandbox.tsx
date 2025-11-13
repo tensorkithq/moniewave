@@ -764,7 +764,7 @@ const widgetExamples: Record<string, WidgetExample> = {
               align: 'center',
               children: [
                 { type: 'Text', value: 'Available Balance', size: 'sm', color: 'muted' },
-                { type: 'Amount', value: 720000, currency: 'NGN', size: 'xl', weight: 'bold', color: 'emphasis' },
+                { type: 'Amount', value: 720000, currency: 'NGN', size: 'xl', weight: 'bold', color: 'default' },
               ],
             },
             { type: 'Divider', spacing: 'lg' },
@@ -853,7 +853,7 @@ const widgetExamples: Record<string, WidgetExample> = {
               align: 'between',
               children: [
                 { type: 'Text', value: 'Total', size: 'sm', weight: 'semibold' },
-                { type: 'Amount', value: 69500, currency: 'NGN', size: 'md', weight: 'bold', color: 'emphasis' },
+                { type: 'Amount', value: 69500, currency: 'NGN', size: 'md', weight: 'bold', color: 'default' },
               ],
             },
           ],

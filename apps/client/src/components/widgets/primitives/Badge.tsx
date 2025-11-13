@@ -24,7 +24,7 @@ export function Badge({
     md: 'text-sm px-2.5 py-1',
   };
 
-  // Map our variant names to shadcn/ui badge variants
+  // Map our variant names to shadcn/ui badge variants with Uber-style black/white theme
   const variantMap = {
     default: 'default',
     secondary: 'secondary',
@@ -34,9 +34,10 @@ export function Badge({
     outline: 'outline',
   } as const;
 
+  // Uber-style black and white color classes
   const customColorClasses = {
-    success: 'bg-green-500 hover:bg-green-600 text-white',
-    warning: 'bg-yellow-500 hover:bg-yellow-600 text-white',
+    success: 'bg-black hover:bg-gray-800 text-white dark:bg-white dark:hover:bg-gray-200 dark:text-black border-0',
+    warning: 'bg-gray-200 hover:bg-gray-300 text-black dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-700',
   };
 
   const mappedVariant = variantMap[variant];

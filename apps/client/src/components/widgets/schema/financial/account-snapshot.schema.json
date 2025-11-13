@@ -57,7 +57,7 @@
             "align": "center",
             "children": [
               { "type": "Text", "value": "Available Balance", "size": "sm", "color": "muted" },
-              { "type": "Amount", "value": 720000, "currency": "NGN", "size": "xl", "weight": "bold", "color": "emphasis" }
+              { "type": "Amount", "value": 720000, "currency": "NGN", "size": "xl", "weight": "bold", "color": "default" }
             ]
           },
           { "type": "Divider", "spacing": "lg" },
