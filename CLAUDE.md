@@ -23,7 +23,8 @@ moniewave/
 ### xmcp Package (packages/xmcp/)
 - **Framework**: xmcp 0.3.5 with React 19.1.1
 - **Configuration**: `xmcp.config.ts` - HTTP transport enabled, SSR enabled
-- **Tools Directory**: `./src/tools` (currently empty, uses `.gitkeep`)
+- **Tools Directory**: `./src/tools` - Widget components organized by type
+- **Type System**: Widget classification (Resource/Action) with Zod schemas in `src/types/`
 - **Build Output**: `dist/` directory
 - **Package Name**: `@moniewave/xmcp`
 
@@ -168,6 +169,59 @@ Tools are exported from modular files in `src/tools/`. Each tool module:
 - SSR enabled via `experimental.ssr` config flag
 - HTTP transport for ChatGPT integration
 
+### Widget Type System (packages/xmcp/)
+A comprehensive type classification system for organizing and categorizing widgets:
+
+**Widget Types:**
+- **Resource** (`__Resource__` prefix): Read-only widgets that display data without user interaction
+  - Examples: `__Resource__AccountSnapshot`, `__Resource__TransactionHistory`
+  - Features: Auto-refresh, data source configuration, filtering/sorting/pagination support
+- **Action** (`__Action__` prefix): Interactive widgets requiring user approval/rejection
+  - Examples: `__Action__ApproveTransaction`, `__Action__ConfirmPayment`
+  - Features: Confirmation dialogs, timeouts, default actions, custom labels
+
+**Type Definitions:**
+- `src/types/widget-types.ts` - Core type definitions, enums, and Zod schemas
+- `src/types/tool-metadata.ts` - Extended ToolMetadata with widget type integration
+- `src/types/index.ts` - Exports all types and utilities
+
+**Utility Functions:**
+- `createToolMetadata()` - Create complete tool metadata with widget type
+- `getWidgetName()` - Generate widget name with appropriate prefix
+- `parseWidgetName()` - Extract base name and type from prefixed name
+- `validateWidgetMetadata()` - Zod-based validation
+- `isResourceWidget()`, `isActionWidget()` - Type guards
+
+**Widget Metadata Structure:**
+```typescript
+{
+  type: WidgetType.Resource | WidgetType.Action,
+  capabilities: {
+    refreshable, realtime, requiresAuth, supportsPiP, supportsDarkMode, etc.
+  },
+  resourceConfig?: { autoRefresh, refreshInterval, dataSource, filterable, sortable, pageable },
+  actionConfig?: { actionType, requiresConfirmation, actionTimeout, defaultAction, actionLabels },
+  version, tags, author, documentationUrl
+}
+```
+
+**Creating Widgets:**
+```typescript
+import { createToolMetadata, WidgetType } from '../types';
+
+export const metadata = createToolMetadata(
+  'AccountSnapshot',
+  'Displays account balance and transactions',
+  {
+    type: WidgetType.Resource,
+    capabilities: { refreshable: true },
+    resourceConfig: { autoRefresh: true, refreshInterval: 30 }
+  }
+);
+```
+
+See [WIDGET_TYPES.md](packages/xmcp/WIDGET_TYPES.md) for complete documentation.
+
 ### Apps SDK Widget Pattern (examples/)
 - Widgets built as standalone bundles with hashed filenames
 - MCP servers return `_meta.openai/outputTemplate` metadata
@@ -213,6 +267,43 @@ PAYSTACK_SECRET_KEY=sk_test_xxx go run main.go
 1. Enable developer mode in ChatGPT
 2. Use ngrok to expose local server: `ngrok http 4000` (Go) or `ngrok http 8000` (TypeScript)
 3. Add connector in Settings > Connectors with ngrok URL
+
+## Adding New Widgets (packages/xmcp/)
+
+### Creating a New Widget with Type System
+
+1. **Choose Widget Type**: Determine if your widget is a Resource (read-only) or Action (interactive)
+
+2. **Create Widget File**: Create a new `.tsx` file in `src/tools/` with the appropriate prefix:
+   - Resource: `__Resource__WidgetName.tsx`
+   - Action: `__Action__WidgetName.tsx`
+
+3. **Define Metadata**: Use `createToolMetadata()` helper:
+   ```typescript
+   import { createToolMetadata, WidgetType } from '../types';
+
+   export const metadata = createToolMetadata(
+     '__Resource__WidgetName',  // or '__Action__WidgetName'
+     'Widget description',
+     {
+       type: WidgetType.Resource,  // or WidgetType.Action
+       version: '1.0.0',
+       capabilities: { /* ... */ },
+       resourceConfig: { /* ... */ }  // or actionConfig for Action widgets
+     }
+   );
+   ```
+
+4. **Implement Component**: Export default React component:
+   ```typescript
+   export default function handler() {
+     return <div>Your widget UI</div>;
+   }
+   ```
+
+5. **Examples**:
+   - Resource widget: See `src/tools/__Resource__AccountSnapshot.tsx`
+   - Action widget: See `src/tools/__Action__ApproveTransaction.tsx`
 
 ## Adding New Paystack Tools
 
