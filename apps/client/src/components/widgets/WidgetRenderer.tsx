@@ -4,8 +4,8 @@
  * Core renderer that validates and renders widget JSON specifications.
  */
 
-import { validateWidget, validateWidgetTypeWithMetadata } from './schemas';
-import { getWidget, getWidgetMetadata } from './registry';
+import { validateWidget } from './schemas';
+import { getWidget } from './registry';
 import type { WidgetNode, WidgetRendererProps, Action, RenderOptions } from './types';
 
 // Import primitives to register them
@@ -61,13 +61,6 @@ export function WidgetRenderer({ spec, options = {} }: WidgetRendererProps) {
   try {
     // Validate the widget specification
     const validatedSpec = validateWidget(spec);
-
-    // Validate with metadata rules
-    if (!validateWidgetTypeWithMetadata(validatedSpec)) {
-      throw new Error(
-        `Widget ${validatedSpec.type} failed metadata validation`
-      );
-    }
 
     // Create renderer with options
     const render = createRenderer(options);

@@ -4,9 +4,13 @@
  * All widget primitives and their props for the JSON-driven widget system.
  */
 
+// Widget kind type
+export type WidgetKind = 'Resource' | 'Action';
+
 // Base types for all widgets
 export interface BaseWidgetProps {
   type: string;
+  kind: WidgetKind;
   key?: string;
   id?: string;
   testId?: string;
@@ -189,139 +193,3 @@ export interface WidgetRendererProps {
   spec: unknown;
   options?: RenderOptions;
 }
-
-// Widget classification
-export type WidgetKind = 'Resource' | 'Action';
-
-// Widget metadata definition
-export interface WidgetMetadata {
-  kind: WidgetKind;
-  category: 'layout' | 'content' | 'interactive' | 'pattern';
-  mutable: boolean;
-  allowedActions?: Action['type'][];
-  description?: string;
-  deprecated?: boolean;
-}
-
-// Metadata registry
-export const WIDGET_METADATA: Record<string, WidgetMetadata> = {
-  // Layout (all Resource)
-  Frame: {
-    kind: 'Resource',
-    category: 'layout',
-    mutable: false,
-    description: 'Main widget container',
-  },
-  FrameHeader: {
-    kind: 'Resource',
-    category: 'layout',
-    mutable: false,
-    description: 'Frame header with title and actions',
-  },
-  Row: {
-    kind: 'Resource',
-    category: 'layout',
-    mutable: false,
-    description: 'Horizontal layout container',
-  },
-  Col: {
-    kind: 'Resource',
-    category: 'layout',
-    mutable: false,
-    description: 'Vertical layout container',
-  },
-  Spacer: {
-    kind: 'Resource',
-    category: 'layout',
-    mutable: false,
-    description: 'Flexible spacing component',
-  },
-  Divider: {
-    kind: 'Resource',
-    category: 'layout',
-    mutable: false,
-    description: 'Visual separator line',
-  },
-
-  // Content (all Resource)
-  Text: {
-    kind: 'Resource',
-    category: 'content',
-    mutable: false,
-    description: 'Text display component',
-  },
-  Icon: {
-    kind: 'Resource',
-    category: 'content',
-    mutable: false,
-    description: 'Icon display component',
-  },
-  Avatar: {
-    kind: 'Resource',
-    category: 'content',
-    mutable: false,
-    description: 'User avatar component',
-  },
-  Amount: {
-    kind: 'Resource',
-    category: 'content',
-    mutable: false,
-    description: 'Currency amount display',
-  },
-  Time: {
-    kind: 'Resource',
-    category: 'content',
-    mutable: false,
-    description: 'Time/date display component',
-  },
-  Badge: {
-    kind: 'Resource',
-    category: 'content',
-    mutable: false,
-    description: 'Status badge component',
-  },
-
-  // Interactive (Action)
-  Button: {
-    kind: 'Action',
-    category: 'interactive',
-    mutable: true,
-    allowedActions: [
-      'approve_tool',
-      'reject_tool',
-      'navigate',
-      'share',
-      'download',
-      'emit',
-    ],
-    description: 'Interactive action button',
-  },
-
-  // Patterns (mixed)
-  KeyValueRow: {
-    kind: 'Resource',
-    category: 'pattern',
-    mutable: false,
-    description: 'Key-value pair display',
-  },
-  KeyValueList: {
-    kind: 'Resource',
-    category: 'pattern',
-    mutable: false,
-    description: 'List of key-value pairs',
-  },
-  ButtonGroup: {
-    kind: 'Action',
-    category: 'pattern',
-    mutable: true,
-    allowedActions: [
-      'approve_tool',
-      'reject_tool',
-      'navigate',
-      'share',
-      'download',
-      'emit',
-    ],
-    description: 'Container for action buttons',
-  },
-};
