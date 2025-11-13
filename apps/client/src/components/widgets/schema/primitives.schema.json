@@ -8,6 +8,7 @@
       "type": "object",
       "properties": {
         "type": { "type": "string" },
+        "kind": { "type": "string" },
         "key": { "type": "string" },
         "id": { "type": "string" },
         "testId": { "type": "string" },

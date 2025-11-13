@@ -6,6 +6,7 @@
   "type": "object",
   "properties": {
     "type": { "const": "Invoice" },
+    "kind": { "const": "Resource" },
     "data": {
       "type": "object",
       "required": ["invoice_id", "invoice_number", "amount_due", "currency", "customer"],
