@@ -154,6 +154,362 @@ export const toolsConfig = [
   }
 ];
 
+// Generate preview widget for tool approval (shown BEFORE execution)
+export const generateToolPreviewWidget = (toolName: string, args: any) => {
+  console.log(`Generating preview widget for: ${toolName}`, args);
+
+  switch (toolName) {
+    case 'pay_contractors_bulk':
+      const totalAmount = args.items.reduce((sum: number, item: any) => sum + item.amount, 0);
+      return {
+        type: 'Frame',
+        size: 'md',
+        padding: 'md',
+        children: [
+          {
+            type: 'FrameHeader',
+            title: 'Payment Preview',
+            expandable: false
+          },
+          {
+            type: 'Row',
+            align: 'between',
+            children: [
+              {
+                type: 'Col',
+                gap: 'sm',
+                children: [
+                  { type: 'Text', value: args.batch_reference, size: 'lg', weight: 'semibold' }
+                ]
+              },
+              {
+                type: 'Badge',
+                label: 'Pending Approval',
+                variant: 'warning'
+              }
+            ]
+          },
+          { type: 'Divider', spacing: 'md' },
+          {
+            type: 'Row',
+            gap: 'lg',
+            children: [
+              {
+                type: 'Col',
+                gap: 'sm',
+                children: [
+                  { type: 'Text', value: 'Total Amount', size: 'xs', color: 'muted' },
+                  { type: 'Amount', value: totalAmount, currency: args.currency, size: 'md', weight: 'semibold' }
+                ]
+              },
+              {
+                type: 'Col',
+                gap: 'sm',
+                children: [
+                  { type: 'Text', value: 'Recipients', size: 'xs', color: 'muted' },
+                  { type: 'Text', value: args.items.length.toString(), size: 'md', weight: 'semibold' }
+                ]
+              }
+            ]
+          },
+          args.narration ? { type: 'Divider', spacing: 'md' } : null,
+          args.narration ? {
+            type: 'Col',
+            gap: 'xs',
+            children: [
+              { type: 'Text', value: 'Narration', size: 'xs', color: 'muted' },
+              { type: 'Text', value: args.narration, size: 'sm' }
+            ]
+          } : null
+        ].filter(Boolean)
+      };
+
+    case 'set_account_limits':
+      return {
+        type: 'Frame',
+        size: 'md',
+        padding: 'md',
+        children: [
+          {
+            type: 'FrameHeader',
+            title: 'Account Limits Preview',
+            expandable: false
+          },
+          {
+            type: 'KeyValueList',
+            gap: 'md',
+            dividers: true,
+            items: [
+              args.balance_limit ? {
+                type: 'KeyValueRow',
+                label: 'Balance Alert Threshold',
+                value: { type: 'Amount', value: args.balance_limit, currency: args.currency || 'NGN', size: 'sm' }
+              } : null,
+              args.daily_transfer_limit ? {
+                type: 'KeyValueRow',
+                label: 'Daily Transfer Limit',
+                value: { type: 'Amount', value: args.daily_transfer_limit, currency: args.currency || 'NGN', size: 'sm' }
+              } : null,
+              args.monthly_transfer_limit ? {
+                type: 'KeyValueRow',
+                label: 'Monthly Transfer Limit',
+                value: { type: 'Amount', value: args.monthly_transfer_limit, currency: args.currency || 'NGN', size: 'sm' }
+              } : null
+            ].filter(Boolean)
+          }
+        ]
+      };
+
+    case 'set_beneficiary_transfer_limit':
+      return {
+        type: 'Frame',
+        size: 'md',
+        padding: 'md',
+        children: [
+          {
+            type: 'FrameHeader',
+            title: 'Beneficiary Limit Preview',
+            expandable: false
+          },
+          {
+            type: 'KeyValueList',
+            gap: 'md',
+            dividers: true,
+            items: [
+              {
+                type: 'KeyValueRow',
+                label: 'Beneficiary',
+                value: { type: 'Text', value: args.beneficiary_id, weight: 'medium' }
+              },
+              {
+                type: 'KeyValueRow',
+                label: 'Period',
+                value: { type: 'Badge', label: args.period, variant: 'default' }
+              },
+              {
+                type: 'KeyValueRow',
+                label: 'Limit',
+                value: { type: 'Amount', value: args.amount_limit, currency: args.currency || 'NGN', size: 'sm', weight: 'semibold' },
+                emphasis: true
+              },
+              {
+                type: 'KeyValueRow',
+                label: 'Alert Threshold',
+                value: { type: 'Text', value: `${args.alerts_at_percent || 80}%`, color: 'muted' }
+              }
+            ]
+          }
+        ]
+      };
+
+    case 'create_virtual_card':
+      return {
+        type: 'Frame',
+        size: 'md',
+        padding: 'lg',
+        children: [
+          {
+            type: 'FrameHeader',
+            title: 'Virtual Card Preview',
+            expandable: false
+          },
+          {
+            type: 'Row',
+            align: 'between',
+            children: [
+              { type: 'Text', value: args.label, size: 'lg', weight: 'semibold' },
+              { type: 'Badge', label: 'Pending', variant: 'warning' }
+            ]
+          },
+          { type: 'Divider', spacing: 'md' },
+          {
+            type: 'KeyValueList',
+            gap: 'md',
+            items: [
+              {
+                type: 'KeyValueRow',
+                label: 'Currency',
+                value: { type: 'Text', value: args.currency, weight: 'medium' }
+              },
+              args.spend_limit ? {
+                type: 'KeyValueRow',
+                label: 'Spend Limit',
+                value: { type: 'Amount', value: args.spend_limit, currency: args.currency, size: 'sm' }
+              } : null,
+              args.spend_period ? {
+                type: 'KeyValueRow',
+                label: 'Limit Period',
+                value: { type: 'Badge', label: args.spend_period.replace('_', ' '), variant: 'default' }
+              } : null,
+              args.expires_at ? {
+                type: 'KeyValueRow',
+                label: 'Expires',
+                value: { type: 'Text', value: args.expires_at, size: 'sm', color: 'muted' }
+              } : null
+            ].filter(Boolean)
+          }
+        ]
+      };
+
+    case 'send_invoice':
+      const total = args.line_items.reduce((sum: number, item: any) => sum + (item.amount * (item.quantity ?? 1)), 0);
+      return {
+        type: 'Frame',
+        size: 'md',
+        padding: 'md',
+        children: [
+          {
+            type: 'FrameHeader',
+            title: 'Invoice Preview',
+            expandable: false
+          },
+          {
+            type: 'Row',
+            align: 'between',
+            children: [
+              { type: 'Text', value: args.invoice_number, size: 'lg', weight: 'semibold' },
+              { type: 'Badge', label: 'Draft', variant: 'default' }
+            ]
+          },
+          { type: 'Divider', spacing: 'md' },
+          {
+            type: 'KeyValueList',
+            gap: 'md',
+            dividers: true,
+            items: [
+              {
+                type: 'KeyValueRow',
+                label: 'Customer',
+                value: { type: 'Text', value: `${args.customer.name} (${args.customer.email})`, weight: 'medium' }
+              },
+              {
+                type: 'KeyValueRow',
+                label: 'Items',
+                value: { type: 'Text', value: `${args.line_items.length} line item(s)`, color: 'muted' }
+              },
+              {
+                type: 'KeyValueRow',
+                label: 'Total Amount',
+                value: { type: 'Amount', value: total, currency: args.currency, size: 'md', weight: 'semibold' },
+                emphasis: true
+              },
+              args.due_date ? {
+                type: 'KeyValueRow',
+                label: 'Due Date',
+                value: { type: 'Text', value: args.due_date, color: 'muted' }
+              } : null
+            ].filter(Boolean)
+          }
+        ]
+      };
+
+    case 'aggregate_transactions':
+      return {
+        type: 'Frame',
+        size: 'md',
+        padding: 'md',
+        children: [
+          {
+            type: 'FrameHeader',
+            title: 'Analytics Query Preview',
+            expandable: false
+          },
+          {
+            type: 'KeyValueList',
+            gap: 'md',
+            dividers: true,
+            items: [
+              {
+                type: 'KeyValueRow',
+                label: 'Metric',
+                value: { type: 'Badge', label: args.metric.replace(/_/g, ' '), variant: 'default' }
+              },
+              {
+                type: 'KeyValueRow',
+                label: 'Period',
+                value: { type: 'Text', value: `${args.from} to ${args.to}`, size: 'sm', color: 'muted' }
+              },
+              args.filters?.beneficiary_id ? {
+                type: 'KeyValueRow',
+                label: 'Beneficiary Filter',
+                value: { type: 'Text', value: args.filters.beneficiary_id, weight: 'medium' }
+              } : null,
+              args.filters?.category ? {
+                type: 'KeyValueRow',
+                label: 'Category Filter',
+                value: { type: 'Text', value: args.filters.category, weight: 'medium' }
+              } : null
+            ].filter(Boolean)
+          }
+        ]
+      };
+
+    case 'account_snapshot':
+      return {
+        type: 'Frame',
+        size: 'md',
+        padding: 'md',
+        children: [
+          {
+            type: 'FrameHeader',
+            title: 'Snapshot Query Preview',
+            expandable: false
+          },
+          {
+            type: 'KeyValueList',
+            gap: 'md',
+            dividers: true,
+            items: [
+              {
+                type: 'KeyValueRow',
+                label: 'Scope',
+                value: { type: 'Badge', label: args.scope || 'all', variant: 'default' }
+              },
+              {
+                type: 'KeyValueRow',
+                label: 'Time Window',
+                value: { type: 'Badge', label: (args.window || 'this_month').replace(/_/g, ' '), variant: 'default' }
+              },
+              args.beneficiary_id ? {
+                type: 'KeyValueRow',
+                label: 'Beneficiary',
+                value: { type: 'Text', value: args.beneficiary_id, weight: 'medium' }
+              } : null,
+              args.group ? {
+                type: 'KeyValueRow',
+                label: 'Group',
+                value: { type: 'Text', value: args.group, weight: 'medium' }
+              } : null
+            ].filter(Boolean)
+          }
+        ]
+      };
+
+    default:
+      // Fallback generic preview
+      return {
+        type: 'Frame',
+        size: 'md',
+        padding: 'md',
+        children: [
+          {
+            type: 'FrameHeader',
+            title: 'Tool Preview',
+            expandable: false
+          },
+          {
+            type: 'Col',
+            gap: 'md',
+            children: [
+              { type: 'Text', value: `Tool: ${toolName}`, size: 'lg', weight: 'semibold' },
+              { type: 'Text', value: 'Arguments provided', size: 'sm', color: 'muted' }
+            ]
+          }
+        ]
+      };
+  }
+};
+
 // Tool execution functions
 export const executeToolCall = async (toolName: string, args: any) => {
   console.log(`Executing tool: ${toolName}`, args);
