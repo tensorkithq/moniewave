@@ -9,6 +9,7 @@ import (
 type Config struct {
 	PaystackSecretKey string
 	ServerPort        string
+	DatabasePath      string
 }
 
 // Load loads configuration from environment variables
@@ -23,8 +24,14 @@ func Load() *Config {
 		port = "4000"
 	}
 
+	dbPath := os.Getenv("DATABASE_PATH")
+	if dbPath == "" {
+		dbPath = "./data/moniewave.db"
+	}
+
 	return &Config{
 		PaystackSecretKey: apiKey,
 		ServerPort:        port,
+		DatabasePath:      dbPath,
 	}
 }
