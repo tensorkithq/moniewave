@@ -71,6 +71,13 @@ All colors MUST be HSL.
   }
   body {
     @apply bg-background text-foreground font-vietnam;
+    /* Enhanced font rendering for crisp text on all devices */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-variant-ligatures: normal;
+    font-feature-settings: "kern" 1;
+    text-size-adjust: 100%;
   }
 }
 
