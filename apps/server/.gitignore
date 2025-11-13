@@ -27,3 +27,10 @@ go.work
 
 # Air (live reload)
 tmp/
+
+# Server binary
+paystack-server
+
+# Database
+data/
+*.db
