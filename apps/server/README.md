@@ -1,245 +1,295 @@
-# Paystack MCP Server
+# Paystack HTTP API Server
 
-A Model Context Protocol (MCP) server implementation for the Paystack payment API. This server provides MCP tools for core Paystack operations with correct handler signatures using `mcp.CallToolRequest`.
+A production-ready Go HTTP API server that provides a RESTful interface for Paystack payment integration. Built with Go 1.23.0, Chi router, and SQLite for persistence.
 
-## Features
+## Overview
 
-- ✅ **Core Operations**: Customer, Transaction, Transfer, Plan, Subscription, Bank, and SubAccount operations
-- ✅ **Type-Safe**: Built with Go using the official `paystack-go` SDK
-- ✅ **Correct MCP Types**: Uses proper `mcp.CallToolRequest` handler signatures
-- ✅ **Production-Ready**: Proper error handling and JSON response formatting
-- ✅ **Easy Integration**: Standard MCP protocol over stdio
-- ✅ **Extensible**: Easy to add more tools following the established pattern
+This server acts as a proxy between your applications and Paystack's payment infrastructure, providing:
+- RESTful HTTP endpoints for all major Paystack operations
+- SQLite database for transaction logging and persistence
+- CORS-enabled for web application integration
+- Structured request/response handling with proper error management
+- Middleware for request logging, recovery, and timeouts
+
+## Architecture
+
+```
+apps/server/
+├── cmd/
+│   └── server/
+│       └── main.go           # Application entry point
+├── internal/
+│   ├── config/              # Configuration management
+│   ├── database/            # SQLite database layer
+│   ├── handlers/            # HTTP request handlers
+│   │   ├── banks.go        # Bank operations
+│   │   ├── core.go         # Core operations (balance)
+│   │   ├── customers.go    # Customer management
+│   │   ├── plans.go        # Subscription plans
+│   │   ├── subaccounts.go  # Sub-account management
+│   │   ├── subscriptions.go # Subscription management
+│   │   ├── transactions.go # Transaction processing
+│   │   └── transfers.go    # Transfer operations
+│   └── paystack/           # Paystack SDK wrapper
+├── data/                   # SQLite database storage
+└── bin/                    # Compiled binaries
+```
 
 ## Installation
 
 ### Prerequisites
 
 - Go 1.23.0 or higher
-- A Paystack account with API keys
+- SQLite3
+- Paystack API credentials
 
-### Setup
+### From Source
 
-1. Clone this repository:
 ```bash
-git clone <your-repo-url>
-cd paystack-mpc-proxy
-```
-
-2. Install dependencies:
-```bash
+git clone https://github.com/tensorkithq/moniewave.git
+cd moniewave/apps/server
 go mod download
 ```
 
-3. Set your Paystack API key:
+## Configuration
+
+The server uses environment variables for configuration:
+
 ```bash
+# Required
 export PAYSTACK_SECRET_KEY="sk_test_your_secret_key_here"
+
+# Optional (with defaults)
+export PORT="4000"                           # Server port (default: 4000)
+export DATABASE_PATH="./data/moniewave.db"   # SQLite database path
 ```
 
-4. Build the server:
+## Building & Running
+
+### Development
+
 ```bash
-go build -o paystack-mcp-server main.go
+# Run directly
+PAYSTACK_SECRET_KEY=sk_test_xxx go run cmd/server/main.go
+
+# Or with Make
+make run
 ```
 
-## Usage
-
-### Running the Server
+### Production Build
 
 ```bash
-PAYSTACK_SECRET_KEY="sk_test_your_secret_key" ./paystack-mcp-server
+# Build binary
+go build -o bin/paystack-server cmd/server/main.go
+
+# Run binary
+PAYSTACK_SECRET_KEY=sk_live_xxx ./bin/paystack-server
 ```
 
-The server communicates over SSE using the MCP protocol.
-### Using The API
+### Using Makefile
 
-Visit https://BASE_URL/sse
-
-```shell
-go run main.go
+```bash
+make build    # Build the binary
+make run      # Run in development
+make test     # Run tests
+make clean    # Clean build artifacts
+make deps     # Install dependencies
 ```
 
-## Available Tools (14 Currently Implemented)
+## API Endpoints
 
-### Core Operations (1 tool)
-- `paystack_check_balance` - Check account balance
+All endpoints use POST method and expect JSON payloads:
 
-### Customer Operations (2 tools)
-- `paystack_customer_create` - Create a new customer
-- `paystack_customer_list` - List customers with pagination
+### Core Operations
 
-### Transaction Operations (3 tools)
-- `paystack_transaction_initialize` - Initialize a transaction
-- `paystack_transaction_verify` - Verify transaction status
-- `paystack_transaction_list` - List transactions
+- `POST /api/v1/balance` - Check account balance
 
-### Transfer Operations (2 tools)
-- `paystack_transfer_recipient_create` - Create transfer recipient
-- `paystack_transfer_initiate` - Initiate a transfer
+### Customer Management
 
-### Plan Operations (1 tool)
-- `paystack_plan_list` - List subscription plans
+- `POST /api/v1/customers/create` - Create new customer
+- `POST /api/v1/customers/list` - List customers (pagination supported)
 
-### Subscription Operations (1 tool)
-- `paystack_subscription_list` - List subscriptions
+### Transaction Processing
 
-### Bank Operations (2 tools)
-- `paystack_bank_list` - List all supported banks
-- `paystack_bank_resolve_account` - Resolve account details
+- `POST /api/v1/transactions/initialize` - Initialize payment
+- `POST /api/v1/transactions/verify` - Verify payment status
+- `POST /api/v1/transactions/list` - List transactions
 
-### SubAccount Operations (1 tool)
-- `paystack_subaccount_list` - List subaccounts
+### Transfer Operations
 
-**Note**: Additional tools can be easily added following the same pattern established in the code.
+- `POST /api/v1/transfers/recipient/create` - Create transfer recipient
+- `POST /api/v1/transfers/initiate` - Initiate money transfer
 
-## Example Usage
+### Banking
 
-### Initialize a Transaction
+- `POST /api/v1/banks/list` - List Nigerian banks
+- `POST /api/v1/banks/resolve` - Resolve bank account details
 
-```json
-{
-  "tool": "paystack_transaction_initialize",
-  "parameters": {
+### Subscription Management
+
+- `POST /api/v1/plans/list` - List subscription plans
+- `POST /api/v1/subscriptions/list` - List active subscriptions
+
+### Sub-accounts
+
+- `POST /api/v1/subaccounts/list` - List sub-accounts
+
+### Health Check
+
+- `GET /health` - Server health status
+
+## Request/Response Examples
+
+### Initialize Transaction
+
+```bash
+curl -X POST http://localhost:4000/api/v1/transactions/initialize \
+  -H "Content-Type: application/json" \
+  -d '{
     "email": "customer@example.com",
     "amount": 500000,
-    "currency": "NGN",
     "callback_url": "https://example.com/callback"
-  }
-}
+  }'
 ```
 
-### Create a Customer
+### Create Customer
 
-```json
-{
-  "tool": "paystack_customer_create",
-  "parameters": {
+```bash
+curl -X POST http://localhost:4000/api/v1/customers/create \
+  -H "Content-Type: application/json" \
+  -d '{
     "email": "customer@example.com",
     "first_name": "John",
     "last_name": "Doe",
-    "phone": "+2348012345678"
-  }
-}
+    "phone": "+2348123456789"
+  }'
 ```
 
-### Create Transfer Recipient
-
-```json
-{
-  "tool": "paystack_transfer_recipient_create",
-  "parameters": {
-    "type": "nuban",
-    "name": "John Doe",
-    "account_number": "0123456789",
-    "bank_code": "058",
-    "currency": "NGN"
-  }
-}
-```
-
-### List Transactions with Pagination
-
-```json
-{
-  "tool": "paystack_transaction_list",
-  "parameters": {
-    "count": 50,
-    "offset": 0
-  }
-}
-```
-
-## Architecture
-
-The server is built with:
-- **Go 1.23.0** - Modern, type-safe implementation
-- **paystack-go SDK** - Official Paystack Go client
-- **mcp-go** - MCP protocol implementation
-- **Stdio Transport** - Standard MCP communication
-
-### Project Structure
-
-```
-paystack-mpc-proxy/
-├── main.go           # MCP server implementation
-├── go.mod            # Go module dependencies
-├── go.sum            # Dependency checksums
-└── README.md         # This file
-```
-
-## Development
-
-### Adding New Tools
-
-1. Add tool registration in the appropriate `register*Tools()` function
-2. Implement the handler function following the pattern:
-   ```go
-   func handleToolName(ctx context.Context, args map[string]interface{}) (*mcp.CallToolResult, error) {
-       // Extract parameters
-       // Call Paystack SDK
-       // Return result
-   }
-   ```
-
-### Testing
-
-To test the server locally:
+### Check Balance
 
 ```bash
-# Run the server
-PAYSTACK_SECRET_KEY="sk_test_xxx" go run main.go
-
-# The server will wait for MCP protocol messages on stdin
+curl -X POST http://localhost:4000/api/v1/balance \
+  -H "Content-Type: application/json" \
+  -d '{}'
 ```
 
-## Security Notes
+## Database
 
-- **Never commit your API keys** - Always use environment variables
-- Use **test keys** (`sk_test_*`) during development
-- Use **live keys** (`sk_live_*`) only in production
-- Validate all input parameters before making API calls
-- Monitor API usage to prevent abuse
+The server uses SQLite for persistence with automatic initialization. The database stores:
+- Transaction logs
+- Request/response history
+- Customer interactions
+- Error logs
+
+Database location: `./data/moniewave.db` (configurable via `DATABASE_PATH`)
+
+## Middleware
+
+The server includes the following middleware:
+- **Request ID**: Unique ID for request tracking
+- **Real IP**: Client IP extraction
+- **Logger**: Structured request logging
+- **Recoverer**: Panic recovery
+- **Timeout**: 60-second request timeout
+- **CORS**: Configured for web applications
 
 ## Error Handling
 
-All tools return errors in a standard format:
+All endpoints return consistent error responses:
 
 ```json
 {
-  "error": "Error: detailed error message from Paystack API",
-  "isError": true
+  "error": true,
+  "message": "Descriptive error message",
+  "code": "ERROR_CODE"
 }
 ```
 
-Successful responses contain the full Paystack API response as JSON.
+## Dependencies
 
-## Contributing
+- [Chi Router](https://github.com/go-chi/chi) - HTTP routing
+- [Paystack Go SDK](https://github.com/borderlesshq/paystack-go) - Paystack API client
+- [SQLite3](https://github.com/mattn/go-sqlite3) - Database driver
+- [go-chi/cors](https://github.com/go-chi/cors) - CORS middleware
 
-Contributions are welcome! Please:
+## Security Considerations
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+- Always use HTTPS in production
+- Never expose secret keys in logs or responses
+- Implement rate limiting for production use
+- Use environment-specific keys (test vs. live)
+- Add authentication layer for public deployments
+- Validate and sanitize all input data
+
+## Development
+
+### Project Structure
+
+- `/cmd/server/` - Application entry point
+- `/internal/config/` - Configuration management
+- `/internal/database/` - Database operations
+- `/internal/handlers/` - HTTP request handlers
+- `/internal/paystack/` - Paystack client wrapper
+- `/internal/server/` - HTTP server setup
+
+### Adding New Endpoints
+
+1. Create handler in `/internal/handlers/`
+2. Define request/response structs
+3. Implement business logic
+4. Add route in `/internal/server/server.go`
+5. Update documentation
+
+## Testing
+
+```bash
+# Run all tests
+make test
+
+# With coverage
+go test -cover ./...
+
+# Specific package
+go test ./internal/handlers/...
+```
+
+## Deployment
+
+### Docker
+
+```dockerfile
+FROM golang:1.23-alpine AS builder
+WORKDIR /app
+COPY . .
+RUN go build -o server cmd/server/main.go
+
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+WORKDIR /root/
+COPY --from=builder /app/server .
+CMD ["./server"]
+```
+
+### Systemd Service
+
+```ini
+[Unit]
+Description=Paystack API Server
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/paystack-server
+Environment="PAYSTACK_SECRET_KEY=sk_live_xxx"
+Environment="PORT=4000"
+ExecStart=/opt/paystack-server/bin/paystack-server
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
 
 ## License
 
-MIT License - See LICENSE file for details
-
-## Resources
-
-- [Paystack API Documentation](https://paystack.com/docs/api/)
-- [Model Context Protocol](https://modelcontextprotocol.io/)
-- [paystack-go SDK](https://github.com/borderlesshq/paystack-go)
-- [mcp-go Library](https://github.com/mark3labs/mcp-go)
-
-## Support
-
-For issues related to:
-- **This MCP server**: Open an issue in this repository
-- **Paystack API**: Contact [Paystack Support](https://paystack.com/support)
-- **MCP Protocol**: See [MCP Documentation](https://modelcontextprotocol.io/)
-
----
-
-Built with ❤️ using Go and the Model Context Protocol
+MIT
