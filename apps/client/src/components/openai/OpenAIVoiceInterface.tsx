@@ -1,9 +1,15 @@
-import { useState } from "react";
-import { Mic, MicOff, X, Search } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Mic, MicOff, X, Search, ChevronDown } from "lucide-react";
 import { useOpenAIVoiceAgent } from "./useOpenAIVoiceAgent";
+import { generateToolPreviewWidget } from "./tools";
 import VoiceOrb from "../VoiceOrb";
 import ConversationMessage from "../ConversationMessage";
 import { WidgetRenderer } from "../widgets/WidgetRenderer";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +29,7 @@ import {
 
 const OpenAIVoiceInterface = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showJsonDetails, setShowJsonDetails] = useState(false);
 
   const {
     isConnected,
@@ -243,25 +250,65 @@ const OpenAIVoiceInterface = () => {
       {/* Tool Approval Dialog */}
       {pendingToolCall && (
         <AlertDialog open={!!pendingToolCall}>
-          <AlertDialogContent>
+          <AlertDialogContent className="max-w-2xl">
             <AlertDialogHeader>
               <AlertDialogTitle>Approve Tool Execution?</AlertDialogTitle>
               <AlertDialogDescription>
                 The assistant wants to execute: <strong>{pendingToolCall.event.name}</strong>
               </AlertDialogDescription>
             </AlertDialogHeader>
-            
+
             <div className="my-4">
-              <p className="text-sm font-semibold mb-2">Arguments:</p>
-              <pre className="text-xs p-3 bg-muted rounded overflow-x-auto max-h-40">
-                {JSON.stringify(
-                  JSON.parse(pendingToolCall.event.arguments),
-                  null,
-                  2
-                )}
-              </pre>
+              {/* Widget Preview */}
+              {(() => {
+                try {
+                  const args = JSON.parse(pendingToolCall.event.arguments);
+                  const previewWidget = generateToolPreviewWidget(
+                    pendingToolCall.event.name,
+                    args
+                  );
+
+                  return (
+                    <div className="mb-4">
+                      <WidgetRenderer
+                        spec={previewWidget}
+                        options={{
+                          onAction: (action, ctx) => {
+                            console.log('Preview widget action:', action, ctx);
+                          }
+                        }}
+                      />
+                    </div>
+                  );
+                } catch (err) {
+                  console.error('Failed to generate preview widget:', err);
+                  return null;
+                }
+              })()}
+
+              {/* Collapsible JSON Details */}
+              <Collapsible open={showJsonDetails} onOpenChange={setShowJsonDetails}>
+                <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${showJsonDetails ? 'rotate-180' : ''}`}
+                  />
+                  Show technical details
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-2">
+                  <div className="border rounded-md p-3 bg-muted/50">
+                    <p className="text-xs font-semibold mb-2 text-muted-foreground">Raw Arguments:</p>
+                    <pre className="text-xs p-2 bg-background rounded overflow-x-auto max-h-40">
+                      {JSON.stringify(
+                        JSON.parse(pendingToolCall.event.arguments),
+                        null,
+                        2
+                      )}
+                    </pre>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
-            
+
             <AlertDialogFooter>
               <AlertDialogCancel onClick={rejectTool}>
                 Reject
