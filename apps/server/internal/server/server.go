@@ -56,6 +56,7 @@ func New(cfg *config.Config) *Server {
 	subAccountHandler := handlers.NewSubAccountHandler(client)
 	invoiceHandler := handlers.NewInvoiceHandler(client)
 	verdictHandler := handlers.NewVerdictHandler()
+	recipientHandler := handlers.NewRecipientHandler(client)
 
 	// Routes
 	r.Route("/api/v1", func(r chi.Router) {
@@ -98,6 +99,11 @@ func New(cfg *config.Config) *Server {
 		r.Post("/verdict/check", verdictHandler.CheckAffordability)
 		r.Get("/verdict/profile", verdictHandler.GetFinancialProfile)
 		r.Get("/verdict/profiles", verdictHandler.ListProfiles)
+
+		// Recipient routes (transfer recipients)
+		r.Post("/recipients/create", recipientHandler.Create)
+		r.Get("/recipients/list", recipientHandler.List)
+		r.Get("/recipients/get", recipientHandler.Get)
 	})
 
 	// Health check endpoint
