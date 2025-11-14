@@ -6,7 +6,66 @@ Based on the comprehensive handler analysis, here are the key integration patter
 
 ---
 
-## Pattern 1: Customer Payment Flow
+## Pattern 1: Invoice Payment Flow
+
+### Scenario
+A merchant creates an invoice for a customer and tracks payment.
+
+### Step-by-Step Workflow
+```
+1. Create Customer (if new)
+   POST /api/v1/customers/create
+   {
+     "email": "customer@example.com",
+     "first_name": "Jane",
+     "last_name": "Smith",
+     "phone": "+2348012345678"
+   }
+   Returns: Customer object with ID and customer_code
+
+2. Create Invoice
+   POST /api/v1/invoices/create
+   {
+     "customer": "CUS_xxxxx",
+     "amount": 500000,           // 5000 NGN in kobo
+     "description": "Order #12345",
+     "due_date": "2025-12-31",
+     "send_notification": true
+   }
+   Returns: Payment request with request_code, offline_reference
+   Note: Also caches invoice in SQLite (invoice_code, customer_id, customer_name, amount, status)
+
+3. List Customer Invoices (local cache)
+   POST /api/v1/invoices/list
+   {
+     "customer_id": "CUS_xxxxx",
+     "status": "pending"
+   }
+   Returns: Array of invoices from SQLite (fast, no API call)
+
+4. Get Full Invoice Details
+   POST /api/v1/invoices/get/PRQ_xxxxx
+   {}
+   Returns: Complete invoice data from Paystack
+
+5. Verify Invoice Payment (after customer pays)
+   POST /api/v1/invoices/verify/PRQ_xxxxx
+   {}
+   Returns: Verification status + updates SQLite status
+```
+
+### Assertions
+- Customer creation returns non-zero ID and customer_code
+- Invoice creation returns request_code and offline_reference
+- Invoice is cached in SQLite with customer information
+- List operation queries SQLite (no Paystack API call)
+- Get operation fetches complete data from Paystack
+- Verify updates local cache status
+- Status progression: pending → success/failed
+
+---
+
+## Pattern 2: Customer Payment Flow
 
 ### Scenario
 A customer wants to make a payment through your platform.
@@ -58,7 +117,7 @@ A customer wants to make a payment through your platform.
 
 ---
 
-## Pattern 2: Account Transfer Flow
+## Pattern 3: Account Transfer Flow
 
 ### Scenario
 Your platform needs to initiate a payout to a customer's bank account.
@@ -114,7 +173,7 @@ Your platform needs to initiate a payout to a customer's bank account.
 
 ---
 
-## Pattern 3: Utility Operations Flow
+## Pattern 4: Utility Operations Flow
 
 ### Scenario
 Common operations needed throughout the application.
@@ -253,6 +312,10 @@ Each endpoint maps to specific SDK service methods:
 |---------|-------------|-----------|
 | CustomerHandler.Create | customer | Create() |
 | CustomerHandler.List | customer | List() / ListN() |
+| InvoiceHandler.Create | custom | CreatePaymentRequest() |
+| InvoiceHandler.List | database | SQLite query |
+| InvoiceHandler.Get | custom | GetPaymentRequest() |
+| InvoiceHandler.Verify | custom | VerifyPaymentRequest() |
 | TransactionHandler.Initialize | transaction | Initialize() |
 | TransactionHandler.Verify | transaction | Verify() |
 | TransactionHandler.List | transaction | List() / ListN() |
@@ -279,6 +342,7 @@ All successful responses follow this envelope:
 ```
 
 The `data` field contains the raw Paystack API response, which includes:
+- Invoice (PaymentRequest): id, request_code, amount, status, offline_reference, customer
 - Transaction: id, reference, amount, status, authorization_url, access_code
 - Customer: id, email, first_name, last_name, customer_code
 - Transfer: id, amount, recipient, status, transfer_code
@@ -291,6 +355,18 @@ The `data` field contains the raw Paystack API response, which includes:
 
 ```go
 // For each workflow:
+func TestInvoiceFlow(t *testing.T) {
+  // 1. Setup: Create customer
+  // 2. Action: Create invoice
+  // 3. Assert: Invoice cached in SQLite, request_code returned
+  // 4. Action: List invoices by customer_id
+  // 5. Assert: Invoice appears in list from SQLite
+  // 6. Action: Get full invoice details
+  // 7. Assert: Complete data from Paystack
+  // 8. Action: Verify invoice
+  // 9. Assert: Status updated in SQLite
+}
+
 func TestPaymentFlow(t *testing.T) {
   // 1. Setup: Create customer
   // 2. Action: Initialize transaction

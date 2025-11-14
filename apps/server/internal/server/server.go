@@ -54,6 +54,8 @@ func New(cfg *config.Config) *Server {
 	subscriptionHandler := handlers.NewSubscriptionHandler(client)
 	bankHandler := handlers.NewBankHandler(client)
 	subAccountHandler := handlers.NewSubAccountHandler(client)
+	invoiceHandler := handlers.NewInvoiceHandler(client)
+	verdictHandler := handlers.NewVerdictHandler()
 
 	// Routes
 	r.Route("/api/v1", func(r chi.Router) {
@@ -85,6 +87,17 @@ func New(cfg *config.Config) *Server {
 
 		// SubAccount routes
 		r.Post("/subaccounts/list", subAccountHandler.List)
+
+		// Invoice routes
+		r.Post("/invoices/create", invoiceHandler.Create)
+		r.Post("/invoices/list", invoiceHandler.List)
+		r.Post("/invoices/get/{id_or_code}", invoiceHandler.Get)
+		r.Post("/invoices/verify/{code}", invoiceHandler.Verify)
+
+		// Verdict routes (credit check / affordability)
+		r.Post("/verdict/check", verdictHandler.CheckAffordability)
+		r.Get("/verdict/profile", verdictHandler.GetFinancialProfile)
+		r.Get("/verdict/profiles", verdictHandler.ListProfiles)
 	})
 
 	// Health check endpoint

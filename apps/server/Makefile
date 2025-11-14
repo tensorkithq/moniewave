@@ -1,4 +1,4 @@
-.PHONY: build run clean test dev install fmt lint tidy help
+.PHONY: build run clean test test-integration dev install fmt lint tidy help
 .PHONY: vet check setup env-check deps-update install-tools
 
 # Binary name
@@ -33,7 +33,8 @@ help:
 	@echo "    make build        - Build the application binary"
 	@echo ""
 	@echo "  Testing:"
-	@echo "    make test         - Run all tests"
+	@echo "    make test         - Run unit tests"
+	@echo "    make test-integration - Run integration tests (requires running server)"
 	@echo ""
 	@echo "  Code Quality:"
 	@echo "    make fmt          - Format code with go fmt"
@@ -90,10 +91,15 @@ clean:
 	@rm -f coverage.out coverage.html
 	@find . -type f -name '*.test' -delete
 
-## test: Run tests
+## test: Run unit tests
 test:
-	@echo "Running tests..."
+	@echo "Running unit tests..."
 	@go test -v ./...
+
+## test-integration: Run integration tests (starts server automatically)
+test-integration: env-check
+	@echo "Running integration tests..."
+	@bash ./scripts/test-integration.sh
 
 ## install: Install dependencies
 install:
