@@ -57,6 +57,7 @@ func New(cfg *config.Config) *Server {
 	invoiceHandler := handlers.NewInvoiceHandler(client)
 	verdictHandler := handlers.NewVerdictHandler()
 	recipientHandler := handlers.NewRecipientHandler(client)
+	expenseHandler := handlers.NewExpenseHandler()
 
 	// Routes
 	r.Route("/api/v1", func(r chi.Router) {
@@ -104,6 +105,12 @@ func New(cfg *config.Config) *Server {
 		r.Post("/recipients/create", recipientHandler.Create)
 		r.Get("/recipients/list", recipientHandler.List)
 		r.Get("/recipients/get", recipientHandler.Get)
+
+		// Expense routes
+		r.Post("/expenses/create", expenseHandler.Create)
+		r.Post("/expenses/list", expenseHandler.List)
+		r.Get("/expenses/get/{id}", expenseHandler.Get)
+		r.Put("/expenses/update/{id}", expenseHandler.Update)
 	})
 
 	// Health check endpoint
