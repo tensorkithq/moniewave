@@ -60,21 +60,13 @@ build:
 	@mkdir -p $(BUILD_DIR)
 	@go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/server
 
-## run: Run the application (loads .env automatically)
+## run: Run the application (automatically loads .env if it exists)
 run: build
 	@echo "Running $(BINARY_NAME)..."
-	@if [ ! -f .env ]; then \
-		echo "WARNING: .env file not found. Copy .env.example to .env and configure it."; \
-		exit 1; \
-	fi
 	@./$(BUILD_DIR)/$(BINARY_NAME)
 
 ## dev: Development mode (with auto-reload using air if installed, otherwise just run)
 dev:
-	@if [ ! -f .env ]; then \
-		echo "WARNING: .env file not found. Copy .env.example to .env and configure it."; \
-		exit 1; \
-	fi
 	@if command -v air > /dev/null; then \
 		air; \
 	else \
