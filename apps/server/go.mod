@@ -9,4 +9,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.32
 )
 
-require github.com/mitchellh/mapstructure v0.0.0-20170125051937-db1efb556f84 // indirect
+require (
+	github.com/joho/godotenv v1.5.1 // indirect
+	github.com/mitchellh/mapstructure v0.0.0-20170125051937-db1efb556f84 // indirect
+)
