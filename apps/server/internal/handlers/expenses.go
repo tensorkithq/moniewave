@@ -20,19 +20,21 @@ func NewExpenseHandler() *ExpenseHandler {
 
 // Expense represents an expense record
 type Expense struct {
-	ID            int       `json:"id"`
-	RecipientCode string    `json:"recipient_code"`
-	RecipientName string    `json:"recipient_name"`
-	Amount        int       `json:"amount"`
-	Currency      string    `json:"currency"`
-	Category      string    `json:"category"`
-	Description   string    `json:"description"`
-	Reference     string    `json:"reference"`
-	Status        string    `json:"status"`
+	ID            int        `json:"id"`
+	RecipientCode string     `json:"recipient_code"`
+	RecipientName string     `json:"recipient_name"`
+	Amount        int        `json:"amount"`
+	Currency      string     `json:"currency"`
+	Category      string     `json:"category"`
+	Description   string     `json:"description"`
+	Reference     string     `json:"reference"`
+	Status        string     `json:"status"`
 	PaymentDate   *time.Time `json:"payment_date"`
-	Notes         string    `json:"notes"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	Notes         string     `json:"notes"`
+	GoalID        *int       `json:"goal_id,omitempty"`
+	BudgetLimitID *int       `json:"budget_limit_id,omitempty"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
 }
 
 type CreateExpenseRequest struct {
@@ -43,6 +45,8 @@ type CreateExpenseRequest struct {
 	Description   string `json:"description"`
 	Reference     string `json:"reference,omitempty"`
 	Notes         string `json:"notes,omitempty"`
+	GoalID        *int   `json:"goal_id,omitempty"`
+	BudgetLimitID *int   `json:"budget_limit_id,omitempty"`
 }
 
 type UpdateExpenseRequest struct {
@@ -63,7 +67,7 @@ type ListExpensesRequest struct {
 	Offset        int    `json:"offset,omitempty"`
 }
 
-// Create creates a new expense
+// Create creates a new expense with budget validation
 func (h *ExpenseHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req CreateExpenseRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -100,16 +104,121 @@ func (h *ExpenseHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// BUDGET RESOLUTION LOGIC
+	// Step 1: Determine which budget to use
+	var budgetID int
+	var goalID *int
+
+	if req.GoalID != nil && *req.GoalID > 0 {
+		// Goal provided - get goal's budget_limit_id
+		var goalBudgetID sql.NullInt64
+		var goalStatus string
+		var goalTargetAmount int
+		err := database.DB.QueryRow(
+			"SELECT budget_limit_id, status, target_amount FROM goals WHERE id = ?",
+			*req.GoalID,
+		).Scan(&goalBudgetID, &goalStatus, &goalTargetAmount)
+
+		if err != nil {
+			if err == sql.ErrNoRows {
+				WriteJSONError(w, fmt.Errorf("goal not found: %d", *req.GoalID), http.StatusNotFound)
+				return
+			}
+			WriteJSONError(w, fmt.Errorf("failed to fetch goal: %w", err), http.StatusInternalServerError)
+			return
+		}
+
+		// Check if goal is already achieved
+		if goalStatus == "achieved" {
+			WriteJSONBadRequest(w, "Cannot create expense for an already achieved goal")
+			return
+		}
+
+		// Check if goal is cancelled or failed
+		if goalStatus == "cancelled" || goalStatus == "failed" {
+			WriteJSONBadRequest(w, fmt.Sprintf("Cannot create expense for a %s goal", goalStatus))
+			return
+		}
+
+		// Check if expense amount matches goal target amount
+		if req.Amount != goalTargetAmount {
+			WriteJSONError(w, fmt.Errorf("expense amount (%d) must match goal target amount (%d)", req.Amount, goalTargetAmount), http.StatusBadRequest)
+			return
+		}
+
+		if goalBudgetID.Valid && goalBudgetID.Int64 > 0 {
+			budgetID = int(goalBudgetID.Int64)
+		} else {
+			// Goal has no budget - use default budget
+			defaultBudget, err := FindOrCreateDefaultBudget()
+			if err != nil {
+				WriteJSONError(w, fmt.Errorf("failed to get default budget: %w", err), http.StatusInternalServerError)
+				return
+			}
+			budgetID = defaultBudget.ID
+		}
+		goalID = req.GoalID
+	} else if req.BudgetLimitID != nil && *req.BudgetLimitID > 0 {
+		// Explicit budget provided
+		budgetID = *req.BudgetLimitID
+	} else {
+		// No goal or budget - use default budget
+		defaultBudget, err := FindOrCreateDefaultBudget()
+		if err != nil {
+			WriteJSONError(w, fmt.Errorf("failed to get default budget: %w", err), http.StatusInternalServerError)
+			return
+		}
+		budgetID = defaultBudget.ID
+	}
+
+	// Step 2: Check if budget can afford this expense
+	checkResp, err := CheckBudgetAffordability(budgetID, req.Amount)
+	if err != nil {
+		WriteJSONError(w, fmt.Errorf("error checking budget: %w", err), http.StatusInternalServerError)
+		return
+	}
+
+	if !checkResp.CanAfford {
+		// Budget cannot afford this expense - reject with helpful message
+		respondWithJSON(w, http.StatusBadRequest, map[string]interface{}{
+			"status":  false,
+			"message": "Expense cannot be created: budget limit exceeded",
+			"data": map[string]interface{}{
+				"budget_limit":      checkResp.BudgetLimit,
+				"spent_amount":      checkResp.SpentAmount,
+				"remaining":         checkResp.Remaining,
+				"requested_amount":  checkResp.RequestedAmount,
+				"excess_amount":     checkResp.ExcessAmount,
+				"would_exceed":      checkResp.WouldExceed,
+				"usage_before":      checkResp.UsageBefore,
+				"usage_after":       checkResp.UsageAfter,
+				"reason":            checkResp.Reason,
+				"suggestions": []string{
+					"Reduce the expense amount to fit within the budget",
+					"Increase the budget limit to accommodate this expense",
+					"Wait until the next budget period",
+					"Choose a different budget with more available funds",
+				},
+			},
+		})
+		return
+	}
+
+	// Step 3: Budget can afford - create the expense
 	// Generate reference if not provided
 	reference := req.Reference
 	if reference == "" {
 		reference = fmt.Sprintf("EXP_%d", time.Now().Unix())
 	}
 
-	// Insert expense
+	// Insert expense with budget tracking
 	query := `
-		INSERT INTO expenses (recipient_code, recipient_name, amount, currency, category, description, reference, status, notes, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)
+		INSERT INTO expenses (
+			recipient_code, recipient_name, amount, currency, category,
+			description, reference, status, notes, goal_id, budget_limit_id,
+			created_at, updated_at
+		)
+		VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)
 	`
 
 	now := time.Now()
@@ -123,6 +232,8 @@ func (h *ExpenseHandler) Create(w http.ResponseWriter, r *http.Request) {
 		req.Description,
 		reference,
 		req.Notes,
+		goalID,
+		budgetID,
 		now,
 		now,
 	)
@@ -132,11 +243,37 @@ func (h *ExpenseHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, _ := result.LastInsertId()
+	expenseID, _ := result.LastInsertId()
 
-	// Return created expense
+	// Step 4: Update budget spent amount
+	err = UpdateBudgetSpending(budgetID, req.Amount)
+	if err != nil {
+		// Rollback expense creation
+		database.DB.Exec("DELETE FROM expenses WHERE id = ?", expenseID)
+		WriteJSONError(w, fmt.Errorf("failed to update budget: %w", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Step 5: Auto-achieve goal if goal_id provided
+	if goalID != nil && *goalID > 0 {
+		achieveQuery := `
+			UPDATE goals
+			SET status = 'achieved',
+			    achieved_at = ?,
+			    achieved_by_expense_id = ?,
+			    updated_at = ?
+			WHERE id = ?
+		`
+		_, err = database.DB.Exec(achieveQuery, now, expenseID, now, *goalID)
+		if err != nil {
+			// Log error but don't fail the entire request
+			fmt.Printf("Warning: Failed to mark goal as achieved: %v\n", err)
+		}
+	}
+
+	// Step 6: Return created expense with budget info
 	expense := Expense{
-		ID:            int(id),
+		ID:            int(expenseID),
 		RecipientCode: req.RecipientCode,
 		RecipientName: recipientName,
 		Amount:        req.Amount,
@@ -146,11 +283,32 @@ func (h *ExpenseHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Reference:     reference,
 		Status:        "pending",
 		Notes:         req.Notes,
+		GoalID:        goalID,
+		BudgetLimitID: &budgetID,
 		CreatedAt:     now,
 		UpdatedAt:     now,
 	}
 
-	WriteJSONSuccess(w, expense)
+	// Include budget information in response
+	responseData := map[string]interface{}{
+		"expense": expense,
+		"budget_info": map[string]interface{}{
+			"budget_id":          budgetID,
+			"budget_limit":       checkResp.BudgetLimit,
+			"previous_spent":     checkResp.SpentAmount,
+			"new_spent":          checkResp.SpentAmount + req.Amount,
+			"remaining":          checkResp.Remaining - req.Amount,
+			"usage_before":       checkResp.UsageBefore,
+			"usage_after":        checkResp.UsageAfter,
+		},
+	}
+
+	if goalID != nil {
+		responseData["goal_achieved"] = true
+		responseData["goal_id"] = *goalID
+	}
+
+	WriteJSONSuccess(w, responseData)
 }
 
 // List lists expenses with optional filters
@@ -161,7 +319,7 @@ func (h *ExpenseHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build query with filters
-	query := `SELECT id, recipient_code, recipient_name, amount, currency, category, description, reference, status, payment_date, notes, created_at, updated_at FROM expenses WHERE 1=1`
+	query := `SELECT id, recipient_code, recipient_name, amount, currency, category, description, reference, status, payment_date, notes, goal_id, budget_limit_id, created_at, updated_at FROM expenses WHERE 1=1`
 	args := []interface{}{}
 
 	// Add filters
@@ -211,6 +369,7 @@ func (h *ExpenseHandler) List(w http.ResponseWriter, r *http.Request) {
 		var expense Expense
 		var category, notes sql.NullString
 		var paymentDate sql.NullTime
+		var goalID, budgetLimitID sql.NullInt64
 
 		err := rows.Scan(
 			&expense.ID,
@@ -224,6 +383,8 @@ func (h *ExpenseHandler) List(w http.ResponseWriter, r *http.Request) {
 			&expense.Status,
 			&paymentDate,
 			&notes,
+			&goalID,
+			&budgetLimitID,
 			&expense.CreatedAt,
 			&expense.UpdatedAt,
 		)
@@ -240,6 +401,14 @@ func (h *ExpenseHandler) List(w http.ResponseWriter, r *http.Request) {
 		}
 		if paymentDate.Valid {
 			expense.PaymentDate = &paymentDate.Time
+		}
+		if goalID.Valid {
+			gid := int(goalID.Int64)
+			expense.GoalID = &gid
+		}
+		if budgetLimitID.Valid {
+			bid := int(budgetLimitID.Int64)
+			expense.BudgetLimitID = &bid
 		}
 
 		expenses = append(expenses, expense)
@@ -262,7 +431,7 @@ func (h *ExpenseHandler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := `
-		SELECT id, recipient_code, recipient_name, amount, currency, category, description, reference, status, payment_date, notes, created_at, updated_at
+		SELECT id, recipient_code, recipient_name, amount, currency, category, description, reference, status, payment_date, notes, goal_id, budget_limit_id, created_at, updated_at
 		FROM expenses
 		WHERE id = ?
 	`
@@ -270,6 +439,7 @@ func (h *ExpenseHandler) Get(w http.ResponseWriter, r *http.Request) {
 	var expense Expense
 	var category, notes sql.NullString
 	var paymentDate sql.NullTime
+	var goalID, budgetLimitID sql.NullInt64
 
 	err := database.DB.QueryRow(query, id).Scan(
 		&expense.ID,
@@ -283,6 +453,8 @@ func (h *ExpenseHandler) Get(w http.ResponseWriter, r *http.Request) {
 		&expense.Status,
 		&paymentDate,
 		&notes,
+		&goalID,
+		&budgetLimitID,
 		&expense.CreatedAt,
 		&expense.UpdatedAt,
 	)
@@ -300,6 +472,14 @@ func (h *ExpenseHandler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 	if paymentDate.Valid {
 		expense.PaymentDate = &paymentDate.Time
+	}
+	if goalID.Valid {
+		gid := int(goalID.Int64)
+		expense.GoalID = &gid
+	}
+	if budgetLimitID.Valid {
+		bid := int(budgetLimitID.Int64)
+		expense.BudgetLimitID = &bid
 	}
 
 	WriteJSONSuccess(w, expense)
