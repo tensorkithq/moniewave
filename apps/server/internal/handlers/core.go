@@ -1,3 +1,20 @@
+// Package handlers implements HTTP handlers for the moniewave financial management system.
+//
+// Core Handler - Paystack Integration Layer
+//
+// OBJECTIVES:
+// Provide essential Paystack account operations.
+//
+// PURPOSE:
+// - Check account balance via Paystack API
+// - Monitor available funds for transfers and operations
+//
+// KEY WORKFLOW:
+// Check Balance → Call Paystack API → Return Balance Info
+//
+// DESIGN DECISIONS:
+// - Uses SafeCheckBalance for error-resistant balance checks
+// - No local caching (always fetches fresh data from Paystack)
 package handlers
 
 import (

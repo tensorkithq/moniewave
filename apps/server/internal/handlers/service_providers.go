@@ -1,3 +1,27 @@
+// Package handlers implements HTTP handlers for the moniewave financial management system.
+//
+// Service Providers Handler - Payment Infrastructure
+//
+// OBJECTIVES:
+// Users need a marketplace to discover and pay for services.
+//
+// PURPOSE:
+// - List available service providers with pricing
+// - Enable category-based discovery (technology, beauty, pets)
+// - Provide transparent pricing before purchase
+// - Simplify service payments through default recipient
+//
+// KEY WORKFLOW:
+// Browse Providers → Filter by Category → View Services & Prices →
+// Create Expense for Service → Payment to Default Recipient
+//
+// DESIGN DECISIONS:
+// - All service providers share one recipient (RCP_serviceprovider) for simplified payment routing
+// - Pricing is embedded in the service data (no separate pricing table)
+// - Mock data allows system to function without external provider APIs
+// - Categories enable quick filtering and discovery
+// - Services include detailed pricing in kobo with nested Service struct
+// - Search functionality filters by name and category
 package handlers
 
 import (

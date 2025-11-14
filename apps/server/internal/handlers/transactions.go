@@ -1,3 +1,25 @@
+// Package handlers implements HTTP handlers for the moniewave financial management system.
+//
+// Transactions Handler - Income Management
+//
+// OBJECTIVES:
+// Track all incoming payments.
+//
+// PURPOSE:
+// - Initialize payment transactions
+// - Verify payment completion
+// - List transaction history
+// - Process customer charges
+//
+// KEY WORKFLOW:
+// Initialize Transaction → Get Payment URL → Customer Pays →
+// Verify Transaction → Update Status → Record Revenue
+//
+// DESIGN DECISIONS:
+// - All transactions go through Paystack API (no local storage)
+// - Reference is used to track transaction state
+// - Verification is required before considering payment complete
+// - List supports pagination for large transaction histories
 package handlers
 
 import (

@@ -1,3 +1,22 @@
+// Package handlers implements HTTP handlers for the moniewave financial management system.
+//
+// Banks Handler - Paystack Integration Layer
+//
+// OBJECTIVES:
+// Provide bank information for Nigerian banking operations.
+//
+// PURPOSE:
+// - List Nigerian banks and their codes
+// - Resolve account numbers to verify account ownership
+// - Enable accurate recipient creation for transfers
+//
+// KEY WORKFLOW:
+// List Banks → User Selects Bank → Resolve Account Number → Verify Account Details
+//
+// DESIGN DECISIONS:
+// - Bank list fetched from Paystack for up-to-date information
+// - Account resolution validates account ownership before transfers
+// - No local caching (banks list is small and changes infrequently)
 package handlers
 
 import (

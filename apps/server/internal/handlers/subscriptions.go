@@ -1,3 +1,22 @@
+// Package handlers implements HTTP handlers for the moniewave financial management system.
+//
+// Subscriptions Handler - Paystack Integration Layer
+//
+// OBJECTIVES:
+// Track active and past subscriptions.
+//
+// PURPOSE:
+// - List customer subscriptions
+// - Monitor subscription status (active, cancelled, expired)
+// - Track recurring revenue
+//
+// KEY WORKFLOW:
+// Customer Subscribes to Plan → Track Subscription → Process Recurring Payments → Monitor Status
+//
+// DESIGN DECISIONS:
+// - Subscriptions managed entirely through Paystack
+// - Pagination support for subscription history
+// - No local state (always fetch from Paystack for accuracy)
 package handlers
 
 import (

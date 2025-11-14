@@ -1,3 +1,27 @@
+// Package handlers implements HTTP handlers for the moniewave financial management system.
+//
+// Budgets Handler - Financial Management Core
+//
+// OBJECTIVES:
+// Users need guardrails to prevent overspending.
+//
+// PURPOSE:
+// - Set spending limits for specific categories or time periods
+// - Track real-time budget utilization
+// - Provide alerts when approaching limits
+// - Enable proactive financial planning
+//
+// KEY WORKFLOW:
+// Create Budget → Set Period & Limit → Track Expenses → Calculate Usage % →
+// Check Alert Threshold → Notify if Exceeded
+//
+// DESIGN DECISIONS:
+// - Budgets track 'spent_amount' automatically when expenses are created
+// - Alert thresholds (e.g., 80%) warn users before they exceed limits
+// - Multiple budget types (category, general, default) allow flexible spending controls
+// - Default budgets are auto-created for users without explicit budgets
+// - Usage percentage is calculated in real-time for immediate feedback
+// - Remaining amount is always computed (amount - spent_amount)
 package handlers
 
 import (

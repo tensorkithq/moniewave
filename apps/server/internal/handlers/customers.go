@@ -1,3 +1,23 @@
+// Package handlers implements HTTP handlers for the moniewave financial management system.
+//
+// Customers Handler - Paystack Integration Layer
+//
+// OBJECTIVES:
+// Manage customer profiles for payment collection.
+//
+// PURPOSE:
+// - Create customer records in Paystack
+// - List and retrieve customer information
+// - Enable transaction association with customers
+//
+// KEY WORKFLOW:
+// Create Customer → Store in Paystack → Use in Transactions → Track Payment History
+//
+// DESIGN DECISIONS:
+// - All customer data stored in Paystack (no local cache)
+// - Email is the primary identifier for customers
+// - Optional fields (first_name, last_name, phone) for flexible customer profiles
+// - Direct passthrough to Paystack SDK for consistency
 package handlers
 
 import (

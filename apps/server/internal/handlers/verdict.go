@@ -1,3 +1,27 @@
+// Package handlers implements HTTP handlers for the moniewave financial management system.
+//
+// Verdict Handler - Credit Assessment
+//
+// OBJECTIVES:
+// Before extending credit, we need to assess affordability.
+//
+// PURPOSE:
+// - Evaluate credit profiles (credit score, income, debt)
+// - Calculate maximum affordable amounts
+// - Provide approval/denial recommendations
+// - Assess risk levels
+//
+// KEY WORKFLOW:
+// Check Affordability → Look up Credit Profile → Analyze Financials →
+// Calculate Max Amount → Determine Risk Level → Return Verdict
+//
+// DESIGN DECISIONS:
+// - Mock credit profiles enable testing without real credit bureaus
+// - Verdict system considers multiple factors (income, debt, payment history)
+// - Risk levels (low, medium, high) inform lending decisions
+// - Seeded data includes diverse profiles (approved, review, denied)
+// - All amounts in kobo for consistency with rest of system
+// - Profiles are looked up by email for customer identification
 package handlers
 
 import (

@@ -1,3 +1,26 @@
+// Package handlers implements HTTP handlers for the moniewave financial management system.
+//
+// Recipients Handler - Payment Infrastructure
+//
+// OBJECTIVES:
+// Before you can send money, you need to know where it's going.
+//
+// PURPOSE:
+// - Cache Paystack transfer recipient data locally
+// - Provide fast recipient lookups without API calls
+// - Support expense creation with validated recipients
+// - Maintain default recipients (e.g., service providers)
+//
+// KEY WORKFLOW:
+// Create Recipient → Call Paystack API → Cache Locally →
+// Reference in Expenses → Validate Before Transfer
+//
+// DESIGN DECISIONS:
+// - Recipients are cached to reduce API calls and improve performance
+// - Default recipient (RCP_serviceprovider) enables unified service provider payments
+// - Local cache ensures expenses can reference recipients that exist
+// - All recipient creation goes through Paystack first, then cached locally
+// - Bank name extracted from Paystack response for display purposes
 package handlers
 
 import (

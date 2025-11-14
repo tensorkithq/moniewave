@@ -1,3 +1,23 @@
+// Package handlers implements HTTP handlers for the moniewave financial management system.
+//
+// Transfers Handler - Paystack Integration Layer
+//
+// OBJECTIVES:
+// Initiate bank transfers to recipients.
+//
+// PURPOSE:
+// - Create transfer recipients with bank account details
+// - Initiate transfers from Paystack balance to bank accounts
+// - Track transfer status and history
+//
+// KEY WORKFLOW:
+// Create Recipient → Initiate Transfer → Verify Transfer → Complete Transaction
+//
+// DESIGN DECISIONS:
+// - Recipients created via Paystack API before transfers
+// - All transfers go through Paystack (no direct bank integration)
+// - Currency defaults to NGN (Nigerian Naira)
+// - Reason field for transfer narration and tracking
 package handlers
 
 import (

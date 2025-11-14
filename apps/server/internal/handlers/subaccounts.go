@@ -1,3 +1,22 @@
+// Package handlers implements HTTP handlers for the moniewave financial management system.
+//
+// SubAccounts Handler - Paystack Integration Layer
+//
+// OBJECTIVES:
+// Manage Paystack sub-accounts for split payments.
+//
+// PURPOSE:
+// - List sub-accounts used for payment splitting
+// - Enable marketplace and platform payment distribution
+// - Track sub-account balances and transactions
+//
+// KEY WORKFLOW:
+// Create SubAccount → Configure Split → Process Payment → Distribute to SubAccounts
+//
+// DESIGN DECISIONS:
+// - Sub-accounts managed through Paystack API
+// - Enables marketplace business models (take fees, split payments)
+// - Pagination support for large sub-account lists
 package handlers
 
 import (

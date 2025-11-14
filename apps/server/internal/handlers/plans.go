@@ -1,3 +1,22 @@
+// Package handlers implements HTTP handlers for the moniewave financial management system.
+//
+// Plans Handler - Paystack Integration Layer
+//
+// OBJECTIVES:
+// Manage recurring payment plans.
+//
+// PURPOSE:
+// - List subscription plans available for customers
+// - Define pricing and billing intervals
+// - Enable subscription-based revenue
+//
+// KEY WORKFLOW:
+// Create Plan → Customer Subscribes → Recurring Charges → Track Subscriptions
+//
+// DESIGN DECISIONS:
+// - Plans stored in Paystack (no local cache)
+// - Pagination support for large plan lists
+// - Direct passthrough to Paystack SDK
 package handlers
 
 import (

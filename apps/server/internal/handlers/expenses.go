@@ -1,3 +1,26 @@
+// Package handlers implements HTTP handlers for the moniewave financial management system.
+//
+// Expenses Handler - Financial Management Core
+//
+// OBJECTIVES:
+// Users need to track where their money goes and link spending to budgets and goals.
+//
+// PURPOSE:
+// - Record all outgoing payments with detailed context (narration, category, recipient)
+// - Connect expenses to budgets for automatic spending tracking
+// - Link expenses to financial goals for progress monitoring
+// - Maintain payment history for analysis and reporting
+//
+// KEY WORKFLOW:
+// Create Expense → Validate Recipient → Check Budget Limit → Update Budget Spent →
+// Link to Goal (if applicable) → Return Budget Status
+//
+// DESIGN DECISIONS:
+// - We use 'narration' instead of 'description' to better convey the story behind each expense
+// - Budget tracking is automatic - when you create an expense in a category, it updates the relevant budget
+// - Expenses are pending by default, allowing for approval workflows
+// - All amounts stored in kobo (Nigerian currency subunit) for precision
+// - Recipients are validated against local cache to prevent invalid expense creation
 package handlers
 
 import (

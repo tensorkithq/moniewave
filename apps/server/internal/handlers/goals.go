@@ -1,3 +1,27 @@
+// Package handlers implements HTTP handlers for the moniewave financial management system.
+//
+// Goals Handler - Financial Management Core
+//
+// OBJECTIVES:
+// Users need motivation and tracking for financial objectives.
+//
+// PURPOSE:
+// - Define financial targets (savings, spending reductions, etc.)
+// - Track progress through linked expenses
+// - Mark goals as achieved when targets are met
+// - Provide visibility into goal completion status
+//
+// KEY WORKFLOW:
+// Create Goal → Set Target & Frequency → Link Expenses/Budgets →
+// Track Progress → Mark Achieved When Target Met
+//
+// DESIGN DECISIONS:
+// - Goals can be linked to budgets (spend X on category Y)
+// - Goals can be linked to specific expenses (achieve goal through expense)
+// - Frequency-based goals (monthly, quarterly) enable recurring targets
+// - Budget affordability is validated before goal creation
+// - Priority levels (low, medium, high) help users focus on important goals
+// - Achieved goals cannot be modified or deleted (historical record)
 package handlers
 
 import (

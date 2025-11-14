@@ -1,3 +1,26 @@
+// Package handlers implements HTTP handlers for the moniewave financial management system.
+//
+// Invoices Handler - Income Management
+//
+// OBJECTIVES:
+// Users need to request payments from customers.
+//
+// PURPOSE:
+// - Create and track payment requests
+// - Store invoice metadata (customer, amount, status)
+// - Verify invoice payments through Paystack
+// - Maintain invoice history for accounting
+//
+// KEY WORKFLOW:
+// Create Invoice → Generate Payment Request → Customer Pays →
+// Verify Payment → Update Invoice Status → Record Transaction
+//
+// DESIGN DECISIONS:
+// - Invoices store both local metadata and Paystack references
+// - Status tracking enables invoice lifecycle management
+// - Verification endpoint confirms payment completion
+// - Line items support for detailed invoice breakdown
+// - Local database cache for quick invoice lookups
 package handlers
 
 import (
