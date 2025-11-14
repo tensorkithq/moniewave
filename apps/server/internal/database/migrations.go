@@ -119,7 +119,6 @@ func runMigrations() error {
 		bank_code TEXT NOT NULL,
 		bank_name TEXT,
 		currency TEXT DEFAULT 'NGN',
-		email TEXT,
 		description TEXT,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
