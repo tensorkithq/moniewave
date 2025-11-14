@@ -180,6 +180,124 @@ func runMigrations() error {
 
 	log.Println("Expense indexes created successfully")
 
+	// Add goal_id and budget_limit_id to expenses table
+	addGoalColumnToExpenses := `ALTER TABLE expenses ADD COLUMN goal_id INTEGER;`
+	addBudgetColumnToExpenses := `ALTER TABLE expenses ADD COLUMN budget_limit_id INTEGER;`
+
+	// Try to add columns (will fail silently if already exists)
+	DB.Exec(addGoalColumnToExpenses)
+	DB.Exec(addBudgetColumnToExpenses)
+
+	// Create indexes for expenses foreign keys
+	createExpenseGoalIndex := `CREATE INDEX IF NOT EXISTS idx_expenses_goal ON expenses(goal_id);`
+	createExpenseBudgetIndex := `CREATE INDEX IF NOT EXISTS idx_expenses_budget ON expenses(budget_limit_id);`
+
+	if _, err := DB.Exec(createExpenseGoalIndex); err != nil {
+		return err
+	}
+
+	if _, err := DB.Exec(createExpenseBudgetIndex); err != nil {
+		return err
+	}
+
+	log.Println("Expense goal and budget columns added successfully")
+
+	// Create goals table (financial goals users want to achieve)
+	createGoalsTable := `
+	CREATE TABLE IF NOT EXISTS goals (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		title TEXT NOT NULL,
+		description TEXT,
+		goal_type TEXT NOT NULL,
+		target_amount INTEGER NOT NULL,
+		budget_limit_id INTEGER,
+		frequency TEXT NOT NULL,
+		start_date DATETIME NOT NULL,
+		end_date DATETIME,
+		status TEXT DEFAULT 'pending',
+		achieved_at DATETIME,
+		achieved_by_expense_id INTEGER,
+		category TEXT,
+		priority TEXT DEFAULT 'medium',
+		notes TEXT,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (budget_limit_id) REFERENCES budget_limits(id),
+		FOREIGN KEY (achieved_by_expense_id) REFERENCES expenses(id)
+	);`
+
+	if _, err := DB.Exec(createGoalsTable); err != nil {
+		return err
+	}
+
+	log.Println("Goals table created successfully")
+
+	// Create indexes for goals table
+	createGoalStatusIndex := `CREATE INDEX IF NOT EXISTS idx_goals_status ON goals(status);`
+	createGoalBudgetIndex := `CREATE INDEX IF NOT EXISTS idx_goals_budget ON goals(budget_limit_id);`
+	createGoalTypeIndex := `CREATE INDEX IF NOT EXISTS idx_goals_type ON goals(goal_type);`
+	createGoalFrequencyIndex := `CREATE INDEX IF NOT EXISTS idx_goals_frequency ON goals(frequency);`
+
+	if _, err := DB.Exec(createGoalStatusIndex); err != nil {
+		return err
+	}
+
+	if _, err := DB.Exec(createGoalBudgetIndex); err != nil {
+		return err
+	}
+
+	if _, err := DB.Exec(createGoalTypeIndex); err != nil {
+		return err
+	}
+
+	if _, err := DB.Exec(createGoalFrequencyIndex); err != nil {
+		return err
+	}
+
+	log.Println("Goal indexes created successfully")
+
+	// Create budget_limits table (spending limits for different periods)
+	createBudgetLimitsTable := `
+	CREATE TABLE IF NOT EXISTS budget_limits (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL,
+		limit_type TEXT NOT NULL,
+		amount INTEGER NOT NULL,
+		period_start DATETIME NOT NULL,
+		period_end DATETIME NOT NULL,
+		spent_amount INTEGER DEFAULT 0,
+		status TEXT DEFAULT 'active',
+		alert_threshold INTEGER DEFAULT 80,
+		notes TEXT,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);`
+
+	if _, err := DB.Exec(createBudgetLimitsTable); err != nil {
+		return err
+	}
+
+	log.Println("Budget limits table created successfully")
+
+	// Create indexes for budget_limits table
+	createBudgetTypeIndex := `CREATE INDEX IF NOT EXISTS idx_budget_limits_type ON budget_limits(limit_type);`
+	createBudgetStatusIndex := `CREATE INDEX IF NOT EXISTS idx_budget_limits_status ON budget_limits(status);`
+	createBudgetPeriodIndex := `CREATE INDEX IF NOT EXISTS idx_budget_limits_period ON budget_limits(period_start, period_end);`
+
+	if _, err := DB.Exec(createBudgetTypeIndex); err != nil {
+		return err
+	}
+
+	if _, err := DB.Exec(createBudgetStatusIndex); err != nil {
+		return err
+	}
+
+	if _, err := DB.Exec(createBudgetPeriodIndex); err != nil {
+		return err
+	}
+
+	log.Println("Budget limit indexes created successfully")
+
 	return nil
 }
 
