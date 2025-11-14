@@ -136,6 +136,17 @@ func runMigrations() error {
 		return err
 	}
 
+	// Insert default service provider recipient if not exists
+	insertDefaultRecipient := `
+	INSERT OR IGNORE INTO recipients (recipient_code, type, name, account_number, bank_code, bank_name, currency, description)
+	VALUES ('RCP_serviceprovider', 'nuban', 'Service Provider', '0000000000', '000', 'Default Bank', 'NGN', 'Default recipient for all service provider payments');`
+
+	if _, err := DB.Exec(insertDefaultRecipient); err != nil {
+		return err
+	}
+
+	log.Println("Default service provider recipient created successfully")
+
 	// Create expenses table
 	createExpensesTable := `
 	CREATE TABLE IF NOT EXISTS expenses (
@@ -145,7 +156,7 @@ func runMigrations() error {
 		amount INTEGER NOT NULL,
 		currency TEXT DEFAULT 'NGN',
 		category TEXT,
-		description TEXT,
+		narration TEXT,
 		reference TEXT UNIQUE,
 		status TEXT DEFAULT 'pending',
 		payment_date DATETIME,

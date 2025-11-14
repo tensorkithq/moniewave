@@ -26,7 +26,7 @@ type Expense struct {
 	Amount        int        `json:"amount"`
 	Currency      string     `json:"currency"`
 	Category      string     `json:"category"`
-	Description   string     `json:"description"`
+	Narration     string     `json:"narration"`
 	Reference     string     `json:"reference"`
 	Status        string     `json:"status"`
 	PaymentDate   *time.Time `json:"payment_date"`
@@ -42,7 +42,7 @@ type CreateExpenseRequest struct {
 	Amount        int    `json:"amount"`
 	Currency      string `json:"currency,omitempty"`
 	Category      string `json:"category,omitempty"`
-	Description   string `json:"description"`
+	Narration     string `json:"narration"`
 	Reference     string `json:"reference,omitempty"`
 	Notes         string `json:"notes,omitempty"`
 	GoalID        *int   `json:"goal_id,omitempty"`
@@ -51,7 +51,7 @@ type CreateExpenseRequest struct {
 
 type UpdateExpenseRequest struct {
 	Category    string     `json:"category,omitempty"`
-	Description string     `json:"description,omitempty"`
+	Narration   string     `json:"narration,omitempty"`
 	Status      string     `json:"status,omitempty"`
 	PaymentDate *time.Time `json:"payment_date,omitempty"`
 	Notes       string     `json:"notes,omitempty"`
@@ -86,7 +86,7 @@ func (h *ExpenseHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Description == "" {
+	if req.Narration == "" {
 		WriteJSONBadRequest(w, "description is required")
 		return
 	}
@@ -215,7 +215,7 @@ func (h *ExpenseHandler) Create(w http.ResponseWriter, r *http.Request) {
 	query := `
 		INSERT INTO expenses (
 			recipient_code, recipient_name, amount, currency, category,
-			description, reference, status, notes, goal_id, budget_limit_id,
+			narration, reference, status, notes, goal_id, budget_limit_id,
 			created_at, updated_at
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)
@@ -229,7 +229,7 @@ func (h *ExpenseHandler) Create(w http.ResponseWriter, r *http.Request) {
 		req.Amount,
 		req.Currency,
 		req.Category,
-		req.Description,
+		req.Narration,
 		reference,
 		req.Notes,
 		goalID,
@@ -279,7 +279,7 @@ func (h *ExpenseHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Amount:        req.Amount,
 		Currency:      req.Currency,
 		Category:      req.Category,
-		Description:   req.Description,
+		Narration:     req.Narration,
 		Reference:     reference,
 		Status:        "pending",
 		Notes:         req.Notes,
@@ -319,7 +319,7 @@ func (h *ExpenseHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build query with filters
-	query := `SELECT id, recipient_code, recipient_name, amount, currency, category, description, reference, status, payment_date, notes, goal_id, budget_limit_id, created_at, updated_at FROM expenses WHERE 1=1`
+	query := `SELECT id, recipient_code, recipient_name, amount, currency, category, narration, reference, status, payment_date, notes, goal_id, budget_limit_id, created_at, updated_at FROM expenses WHERE 1=1`
 	args := []interface{}{}
 
 	// Add filters
@@ -378,7 +378,7 @@ func (h *ExpenseHandler) List(w http.ResponseWriter, r *http.Request) {
 			&expense.Amount,
 			&expense.Currency,
 			&category,
-			&expense.Description,
+			&expense.Narration,
 			&expense.Reference,
 			&expense.Status,
 			&paymentDate,
@@ -431,7 +431,7 @@ func (h *ExpenseHandler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := `
-		SELECT id, recipient_code, recipient_name, amount, currency, category, description, reference, status, payment_date, notes, goal_id, budget_limit_id, created_at, updated_at
+		SELECT id, recipient_code, recipient_name, amount, currency, category, narration, reference, status, payment_date, notes, goal_id, budget_limit_id, created_at, updated_at
 		FROM expenses
 		WHERE id = ?
 	`
@@ -448,7 +448,7 @@ func (h *ExpenseHandler) Get(w http.ResponseWriter, r *http.Request) {
 		&expense.Amount,
 		&expense.Currency,
 		&category,
-		&expense.Description,
+		&expense.Narration,
 		&expense.Reference,
 		&expense.Status,
 		&paymentDate,
@@ -508,9 +508,9 @@ func (h *ExpenseHandler) Update(w http.ResponseWriter, r *http.Request) {
 		args = append(args, req.Category)
 	}
 
-	if req.Description != "" {
-		updates = append(updates, "description = ?")
-		args = append(args, req.Description)
+	if req.Narration != "" {
+		updates = append(updates, "narration = ?")
+		args = append(args, req.Narration)
 	}
 
 	if req.Status != "" {

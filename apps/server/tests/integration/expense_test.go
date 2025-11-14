@@ -32,7 +32,7 @@ type Expense struct {
 	Amount        int        `json:"amount"`
 	Currency      string     `json:"currency"`
 	Category      string     `json:"category"`
-	Description   string     `json:"description"`
+	Narration     string     `json:"narration"`
 	Reference     string     `json:"reference"`
 	Status        string     `json:"status"`
 	PaymentDate   *time.Time `json:"payment_date"`
@@ -58,7 +58,7 @@ func TestRecipientWorkflow(t *testing.T) {
 			"account_number": "0123456789",
 			"bank_code":      "058",
 			"currency":       "NGN",
-			"description":    "Test recipient for expenses",
+			"narration":    "Test recipient for expenses",
 		}
 
 		resp := makeRequest(t, "POST", "/recipients/create", reqBody)
@@ -217,7 +217,7 @@ func TestExpenseWorkflow(t *testing.T) {
 			"amount":         5000000, // ₦50,000
 			"currency":       "NGN",
 			"category":       "software",
-			"description":    "Monthly SaaS subscription",
+			"narration":    "Monthly SaaS subscription",
 			"notes":          "Payment for January 2024",
 		}
 
@@ -253,7 +253,7 @@ func TestExpenseWorkflow(t *testing.T) {
 		}
 
 		expenseID = expense.ID
-		t.Logf("✓ Created expense #%d: ₦%d - %s", expense.ID, expense.Amount/100, expense.Description)
+		t.Logf("✓ Created expense #%d: ₦%d - %s", expense.ID, expense.Amount/100, expense.Narration)
 	})
 
 	t.Run("Step3_ListExpenses", func(t *testing.T) {
@@ -285,7 +285,7 @@ func TestExpenseWorkflow(t *testing.T) {
 		for _, e := range expenses {
 			if e.ID == expenseID {
 				found = true
-				t.Logf("✓ Found expense in list: #%d - %s", e.ID, e.Description)
+				t.Logf("✓ Found expense in list: #%d - %s", e.ID, e.Narration)
 				break
 			}
 		}
@@ -331,7 +331,7 @@ func TestExpenseWorkflow(t *testing.T) {
 			t.Fatalf("Expected expense ID %d, got %d", expenseID, expense.ID)
 		}
 
-		t.Logf("✓ Retrieved expense: #%d - %s (Status: %s)", expense.ID, expense.Description, expense.Status)
+		t.Logf("✓ Retrieved expense: #%d - %s (Status: %s)", expense.ID, expense.Narration, expense.Status)
 	})
 
 	t.Run("Step5_UpdateExpense", func(t *testing.T) {
@@ -375,7 +375,7 @@ func TestExpenseValidation(t *testing.T) {
 	t.Run("MissingRecipientCode", func(t *testing.T) {
 		reqBody := map[string]interface{}{
 			"amount":      1000000,
-			"description": "Test expense",
+			"narration": "Test expense",
 		}
 
 		resp := makeRequest(t, "POST", "/expenses/create", reqBody)
@@ -391,7 +391,7 @@ func TestExpenseValidation(t *testing.T) {
 		reqBody := map[string]interface{}{
 			"recipient_code": "RCP_test",
 			"amount":         0,
-			"description":    "Test expense",
+			"narration":    "Test expense",
 		}
 
 		resp := makeRequest(t, "POST", "/expenses/create", reqBody)
@@ -422,7 +422,7 @@ func TestExpenseValidation(t *testing.T) {
 		reqBody := map[string]interface{}{
 			"recipient_code": "RCP_nonexistent",
 			"amount":         1000000,
-			"description":    "Test expense",
+			"narration":    "Test expense",
 		}
 
 		resp := makeRequest(t, "POST", "/expenses/create", reqBody)
@@ -470,7 +470,7 @@ func TestExpenseFilters(t *testing.T) {
 				"recipient_code": recipientCode,
 				"amount":         1000000 + (len(category) * 100000),
 				"category":       category,
-				"description":    fmt.Sprintf("Test %s expense", category),
+				"narration":    fmt.Sprintf("Test %s expense", category),
 			})
 
 			if !expenseResp.Status {

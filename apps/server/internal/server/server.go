@@ -60,6 +60,7 @@ func New(cfg *config.Config) *Server {
 	expenseHandler := handlers.NewExpenseHandler()
 	budgetHandler := handlers.NewBudgetHandler()
 	goalHandler := handlers.NewGoalHandler()
+	serviceProviderHandler := handlers.NewServiceProviderHandler()
 
 	// Routes
 	r.Route("/api/v1", func(r chi.Router) {
@@ -128,6 +129,9 @@ func New(cfg *config.Config) *Server {
 		r.Get("/goals/{id}", goalHandler.Get)
 		r.Put("/goals/{id}", goalHandler.Update)
 		r.Delete("/goals/{id}", goalHandler.Delete)
+
+		// Service Provider routes
+		r.Get("/service_providers", serviceProviderHandler.List)
 	})
 
 	// Health check endpoint
