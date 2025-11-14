@@ -45,3 +45,10 @@ func WriteJSONBadRequest(w http.ResponseWriter, message string) {
 	w.WriteHeader(http.StatusBadRequest)
 	json.NewEncoder(w).Encode(errResponse)
 }
+
+// respondWithJSON writes a JSON response with a custom status code
+func respondWithJSON(w http.ResponseWriter, statusCode int, payload interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	json.NewEncoder(w).Encode(payload)
+}
