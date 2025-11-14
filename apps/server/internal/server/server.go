@@ -58,6 +58,8 @@ func New(cfg *config.Config) *Server {
 	verdictHandler := handlers.NewVerdictHandler()
 	recipientHandler := handlers.NewRecipientHandler(client)
 	expenseHandler := handlers.NewExpenseHandler()
+	budgetHandler := handlers.NewBudgetHandler()
+	goalHandler := handlers.NewGoalHandler()
 
 	// Routes
 	r.Route("/api/v1", func(r chi.Router) {
@@ -111,6 +113,21 @@ func New(cfg *config.Config) *Server {
 		r.Post("/expenses/list", expenseHandler.List)
 		r.Get("/expenses/get/{id}", expenseHandler.Get)
 		r.Put("/expenses/update/{id}", expenseHandler.Update)
+
+		// Budget routes
+		r.Post("/budgets/create", budgetHandler.Create)
+		r.Post("/budgets/list", budgetHandler.List)
+		r.Get("/budgets/{id}", budgetHandler.Get)
+		r.Put("/budgets/{id}", budgetHandler.Update)
+		r.Get("/budgets/{id}/check/{amount}", budgetHandler.CheckLimit)
+		r.Get("/budgets/active", budgetHandler.GetActiveBudgets)
+
+		// Goal routes
+		r.Post("/goals/create", goalHandler.Create)
+		r.Post("/goals/list", goalHandler.List)
+		r.Get("/goals/{id}", goalHandler.Get)
+		r.Put("/goals/{id}", goalHandler.Update)
+		r.Delete("/goals/{id}", goalHandler.Delete)
 	})
 
 	// Health check endpoint
@@ -123,6 +140,11 @@ func New(cfg *config.Config) *Server {
 		router: r,
 		config: cfg,
 	}
+}
+
+// ServeHTTP makes Server compatible with http.Handler
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.router.ServeHTTP(w, r)
 }
 
 // Start starts the HTTP server
