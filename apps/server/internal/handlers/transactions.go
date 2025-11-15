@@ -29,7 +29,7 @@ import (
 
 	"paystack.mpc.proxy/internal/paystack"
 
-	paystackSDK "github.com/borderlesshq/paystack-go"
+	paystackSDK "github.com/rpip/paystack-go"
 )
 
 type TransactionHandler struct {
@@ -66,7 +66,7 @@ func (h *TransactionHandler) Initialize(w http.ResponseWriter, r *http.Request) 
 
 	txn := &paystackSDK.TransactionRequest{
 		Email:       req.Email,
-		Amount:      req.Amount,
+		Amount:      float32(req.Amount),
 		Reference:   req.Reference,
 		CallbackURL: req.CallbackURL,
 		Currency:    req.Currency,

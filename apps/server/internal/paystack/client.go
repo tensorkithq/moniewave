@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/borderlesshq/paystack-go"
+	"github.com/rpip/paystack-go"
 )
 
 // Client wraps the Paystack SDK client

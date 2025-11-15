@@ -27,7 +27,7 @@ import (
 
 	"paystack.mpc.proxy/internal/paystack"
 
-	paystackSDK "github.com/borderlesshq/paystack-go"
+	paystackSDK "github.com/rpip/paystack-go"
 )
 
 type CustomerHandler struct {
